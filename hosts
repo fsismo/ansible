@@ -1,0 +1,14 @@
+[servidores]
+	alphaprime.sismonda.local	ansible_python_interpreter=/usr/bin/python3
+
+[rbpi3]
+	rbpi3-001.sismonda.local	ansible_connection=local	ansible_python_interpreter=/usr/bin/python3
+	rbpi3-002.sismonda.local
+
+[rbpi4]
+	rbpi4-001.sismonda.local
+	rbpi4-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
+	rbpi4-003.sismonda.local
+
+[rbpiz]
+	rbpiz-[001:002].sismonda.local	ansible_python_interpreter=/usr/bin/python3

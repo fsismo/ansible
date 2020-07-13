@@ -1,0 +1,23 @@
+---
+- hosts: all 
+  become: yes 
+
+  tasks:
+  - name: Instalar aplicaciones básicas, mi toolbox
+    package:
+      name: 
+       - aria2
+       - byobu
+       - elinks
+       - ethtool
+       - exfat-fuse
+       - exfat-utils
+       - fail2ban
+       - iftop
+       - mc
+       - molly-guard
+       - net-tools
+       - rsync
+       - vim
+       - wget
+      state: latest

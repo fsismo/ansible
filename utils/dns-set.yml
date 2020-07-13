@@ -1,0 +1,17 @@
+---
+- hosts: rbpi3-002.sismonda.local
+  become: yes
+
+  tasks:
+  - name: configure hostname and domain name
+    net_system:
+      domain_name: sismonda.local 
+      domain-search:
+        - sismonda.local
+
+  - name: Configurar servidores DNS
+    net_system:
+      name_servers:
+        - 10.0.0.31
+        - 10.0.0.10
+        - 10.0.0.62
