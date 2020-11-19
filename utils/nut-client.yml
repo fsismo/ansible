@@ -1,6 +1,11 @@
 ---
 - hosts: all:!rbpi4-002.sismonda.local 
   become: yes 
+  handlers:
+   - name: restart_service
+     service:
+       name: nut-client
+       state: restarted
 
   tasks:
   - name: Instalar Nut.
@@ -17,6 +22,8 @@
       group: nut
       mode: 0640
       backup: yes
+    notify:
+      - restart_service
 
   - name: Copiar upsmon.conf.
     template:
@@ -25,6 +32,8 @@
       owner: root
       group: nut
       mode: 0640
+    notify:
+      - restart_service
 
   - name: Copiar upssched.conf.
     template:
@@ -33,6 +42,8 @@
       owner: root
       group: nut
       mode: 0640
+    notify:
+      - restart_service
 
   - name: Verificar ejecución de Nut.
     systemd: 

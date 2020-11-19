@@ -13,6 +13,7 @@
        - exfat-fuse
        - exfat-utils
        - fail2ban
+       - iperf3
        - iftop
        - mc
        - molly-guard
