@@ -3,11 +3,12 @@
 	blackmamba.sismonda.local
 
 [rbpi3]
+	rbpi3-000.sismonda.local
 	rbpi3-001.sismonda.local	ansible_connection=local	ansible_python_interpreter=/usr/bin/python3
 	rbpi3-002.sismonda.local
-	rbpi3-003.sismonda.local
 
 [rbpi4]
+	rbpi4-000.sismonda.local
 	rbpi4-001.sismonda.local
 	rbpi4-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 	rbpi4-003.sismonda.local
@@ -16,3 +17,10 @@
 
 [rbpiz]
 	rbpiz-[001:002].sismonda.local	ansible_python_interpreter=/usr/bin/python3
+
+[dns]
+	rbpi3-001.sismonda.local
+        rbpi4-002.sismonda.local        ansible_python_interpreter=/usr/bin/python3
+        rbpiz-002.sismonda.local  ansible_python_interpreter=/usr/bin/python3
+
+
