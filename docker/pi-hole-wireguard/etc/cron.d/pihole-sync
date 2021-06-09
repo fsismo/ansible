@@ -1,0 +1,2 @@
+#m	h	d	m	wd	usr	cmd
+15	*	*	*	*	root	/opt/utils/pihole-sync-slave.sh

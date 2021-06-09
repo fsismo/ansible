@@ -1,5 +1,5 @@
 ---
-- hosts: rbpi4-004.sismonda.local:rbpi4-005.sismonda.local 
+- hosts: rbpi4:rbpi3
   become: yes 
 
   tasks:
@@ -32,10 +32,10 @@
   - name: Copiar rbpi-backup-crond.conf
     template:
       src: /etc/ansible/utils/rbpi-backup/rbpi-backup-crond.conf
-      dest: /etc/cron.d/rbpi-backup-crond.conf
+      dest: /etc/cron.d/rbpi-backup-crond
       owner: root
       group: root
-      mode: 0444
+      mode: 0644
       backup: yes
 
   - name: Crear directorio /mnt/storage
