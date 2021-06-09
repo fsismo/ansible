@@ -90,7 +90,7 @@
   - name: Copiar dnsmasq lan definion file
     template:
       src: /etc/ansible/docker/pi-hole/opt/docker/pihole/etc/dnsmasq.d/02-lan.conf
-      dest: /opt/docker/pihole/etc/dnsmasq.d/02-lan.conf
+      dest: /opt/docker/wireguard-pihole/pihole/etc/dnsmasq.d/02-lan.conf
       owner: root
       group: root
       mode: 0644
@@ -102,6 +102,12 @@
       state: stopped
       daemon_reload: yes
       enabled: no
+
+  - name: Configurando /etc/resolv.conf para utilizar pihole
+    lineinfile:
+      path: /etc/resolv.conf
+      regexp: '^nameserver 127.0.0.53'
+      line: 'nameserver 8.8.8.8'
 
   - name: Configurar ejecución de Docker.
     systemd:
@@ -120,5 +126,5 @@
   - name: Configurando /etc/resolv.conf para utilizar pihole
     lineinfile:
       path: /etc/resolv.conf
-      regexp: '^nameserver 127.0.0.53'
+      regexp: '^nameserver 8.8.8.8'
       line: 'nameserver 127.0.0.1'
