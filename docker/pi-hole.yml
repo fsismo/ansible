@@ -1,36 +1,38 @@
+# Despliega un docker-compose.yml con un contenedor de pihole.
+# DNS con filtro de publicidad.
+# Sincroniza un lan.list para tener dns interno.
 ---
-- hosts: rbpi3-004.sismonda.local 
-  become: yes 
+- hosts: rbpi3-004.sismonda.local
+  become: yes
 
   tasks:
   - name: Instalar docker.io, docker-compose, nfs-common y rysnc.
     package:
-      name: 
+      name:
        - docker.io
        - docker-compose
        - nfs-common
        - rsync
-      state: latest
-
-  - name: Crear directorio /opt/utils 
-    file:
-      path: /opt/utils
-      state: directory 
-
-  - name: Crear directorio /mnt/storage
-    file:
-      path: /mnt/storage
-      state: directory 
-
-  - name: Crear directorio /opt/docker/pihole
-    file:
-      path: /opt/docker/pihole/etc/dnsmasq.d/
-      state: directory 
 
   - name: Crear directorio /opt/utils
     file:
       path: /opt/utils
-      state: directory 
+      state: directory
+
+  - name: Crear directorio /mnt/storage
+    file:
+      path: /mnt/storage
+      state: directory
+
+  - name: Crear directorio /opt/docker/pihole
+    file:
+      path: /opt/docker/pihole/etc/dnsmasq.d/
+      state: directory
+
+  - name: Crear directorio /opt/utils
+    file:
+      path: /opt/utils
+      state: directory
 
   - name: Mount up device by label
     mount:
@@ -38,7 +40,7 @@
       src: 10.0.0.9:/storage
       fstype: nfs
       opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
-      state: mounted 
+      state: mounted
 
   - name: Copiar docker-compose
     template:
@@ -95,21 +97,21 @@
       backup: yes
 
   - name: Reiniciar systemd-resolved.
-    systemd: 
+    systemd:
       name: systemd-resolved
-      state: stopped 
+      state: stopped
       daemon_reload: yes
       enabled: no
 
   - name: Configurar ejecución de Docker.
-    systemd: 
-      name: docker 
+    systemd:
+      name: docker
       state: started
       daemon_reload: yes
       enabled: yes
 
   - name: Configurar ejecución de docker-pihole.service.
-    systemd: 
+    systemd:
       name: docker-pihole.service
       state: restarted
       daemon_reload: yes
@@ -117,6 +119,6 @@
 
   - name: Configurando /etc/resolv.conf para utilizar pihole
     lineinfile:
-      path: /etc/resolv.conf 
+      path: /etc/resolv.conf
       regexp: '^nameserver 127.0.0.53'
       line: 'nameserver 127.0.0.1'
