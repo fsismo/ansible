@@ -1,3 +1,6 @@
+# Despliega un docker-compose.yml con un contenedor de pihole y otro de wireguard.
+# Provee vpn y DNS con filtro de publicidad.
+# Sincroniza un lan.list para tener dns interno.
 ---
 - hosts: rbpiz-001.sismonda.local 
   become: yes 
@@ -94,29 +97,29 @@
       mode: 0644
       backup: yes
 
-  - name: Reiniciar systemd-resolved.
-    systemd: 
-      name: systemd-resolved
-      state: stopped 
-      daemon_reload: yes
-      enabled: no
+- name: Reiniciar systemd-resolved.
+  systemd: 
+    name: systemd-resolved
+    state: stopped 
+    daemon_reload: yes
+    enabled: no
 
-  - name: Configurar ejecución de Docker.
-    systemd: 
-      name: docker 
-      state: started
-      daemon_reload: yes
-      enabled: yes
+- name: Configurar ejecución de Docker.
+  systemd: 
+    name: docker 
+    state: started
+    daemon_reload: yes
+    enabled: yes
 
-  - name: Configurar ejecución de docker-wireguard-pihole.service.
-    systemd: 
-      name: docker-wireguard-pihole.service
-      state: started
-      daemon_reload: yes
-      enabled: yes
+- name: Configurar ejecución de docker-wireguard-pihole.service.
+  systemd: 
+    name: docker-wireguard-pihole.service
+    state: started
+    daemon_reload: yes
+    enabled: yes
 
-  - name: Configurando /etc/resolv.conf para utilizar pihole
-    lineinfile:
-      path: /etc/resolv.conf 
-      regexp: '^nameserver 127.0.0.53'
-      line: 'nameserver 127.0.0.1'
+- name: Configurando /etc/resolv.conf para utilizar pihole
+  lineinfile:
+    path: /etc/resolv.conf 
+    regexp: '^nameserver 127.0.0.53'
+    line: 'nameserver 127.0.0.1'
