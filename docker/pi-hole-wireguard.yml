@@ -24,7 +24,7 @@
 
   - name: Crear directorio /opt/docker/wireguard-pihole
     file:
-      path: /opt/docker/wireguard-pihole
+      path: /opt/docker/wireguard-pihole/pihole/etc/dnsmasq.d
       state: directory 
 
   - name: Crear directorio /opt/utils
@@ -76,7 +76,6 @@
       mode: 0640
       backup: yes
 
-
   - name: Copiar docker-wireguard-pihole.service
     template:
       src: /etc/ansible/docker/pi-hole-wireguard/etc/systemd/system/docker-wireguard-pihole.service
@@ -86,9 +85,21 @@
       mode: 0640
       backup: yes
 
-  - name: Just force systemd to reread configs
-    ansible.builtin.systemd:
+- name: Copiar dnsmasq lan definion file
+    template:
+      src: /etc/ansible/docker/pi-hole/opt/docker/pihole/etc/dnsmasq.d/02-lan.conf
+      dest: /opt/docker/pihole/etc/dnsmasq.d/02-lan.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Reiniciar systemd-resolved.
+    systemd: 
+      name: systemd-resolved
+      state: stopped 
       daemon_reload: yes
+      enabled: no
 
   - name: Configurar ejecución de Docker.
     systemd: 
@@ -103,3 +114,9 @@
       state: started
       daemon_reload: yes
       enabled: yes
+
+  - name: Configurando /etc/resolv.conf para utilizar pihole
+    lineinfile:
+      path: /etc/resolv.conf 
+      regexp: '^nameserver 127.0.0.53'
+      line: 'nameserver 127.0.0.1'

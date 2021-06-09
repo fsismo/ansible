@@ -94,15 +94,6 @@
       mode: 0644
       backup: yes
 
-  - name: Copiar Resolv.conf
-    template:
-      src: /etc/ansible/docker/pi-hole/etc/systemd/resolved.conf
-      dest: /etc/systemd/resolved.conf
-      owner: root
-      group: root
-      mode: 0640
-      backup: yes
-
   - name: Reiniciar systemd-resolved.
     systemd: 
       name: systemd-resolved
