@@ -1,0 +1,10 @@
+[Unit]
+Description=Pihole Sync script service
+Wants=docker-wireguard-pihole-sync.timer
+
+[Service]
+Type=oneshot
+ExecStart=/opt/utils/pihole-sync-slave.sh
+
+[Install]
+WantedBy=multi-user.target

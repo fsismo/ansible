@@ -2,7 +2,7 @@
 # Provee vpn y DNS con filtro de publicidad.
 # Sincroniza un lan.list para tener dns interno.
 ---
-- hosts: rbpi3-004.sismonda.local
+- hosts: rbpi3-002.sismonda.local #,rbpi3-004.sismonda.local
   become: yes
 
   tasks:
@@ -57,7 +57,7 @@
       dest: /opt/utils/pihole-sync-slave.sh
       owner: root
       group: root
-      mode: 0640
+      mode: 0740
       backup: yes
 
   - name: Pi-Hole sync script conf
@@ -69,22 +69,31 @@
       mode: 0640
       backup: yes
 
-  - name: Pi-Hole sync cron config
-    template:
-      src: /etc/ansible/docker/pi-hole-wireguard/etc/cron.d/pihole-sync
-      dest: /etc/cron.d/pihole-sync
-      owner: root
-      group: root
-      mode: 0640
-      backup: yes
-
   - name: Copiar docker-wireguard-pihole.service
     template:
       src: /etc/ansible/docker/pi-hole-wireguard/etc/systemd/system/docker-wireguard-pihole.service
       dest: /etc/systemd/system/docker-wireguard-pihole.service
       owner: root
       group: root
-      mode: 0640
+      mode: 0644
+      backup: yes
+
+  - name: Copiar docker-wireguard-pihole-sync.service
+    template:
+      src: /etc/ansible/docker/pi-hole-wireguard/etc/systemd/system/docker-wireguard-pihole-sync.service
+      dest: /etc/systemd/system/docker-wireguard-pihole-sync.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar docker-wireguard-pihole-sync.timer
+    template:
+      src: /etc/ansible/docker/pi-hole-wireguard/etc/systemd/system/docker-wireguard-pihole-sync.timer
+      dest: /etc/systemd/system/docker-wireguard-pihole-sync.timer
+      owner: root
+      group: root
+      mode: 0644
       backup: yes
 
   - name: Copiar dnsmasq lan definion file
@@ -119,6 +128,13 @@
   - name: Configurar ejecución de docker-wireguard-pihole.service.
     systemd:
       name: docker-wireguard-pihole.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Configurar ejecución de docker-wireguard-pihole-sync.timer
+    systemd:
+      name: docker-wireguard-pihole-sync.timer
       state: started
       daemon_reload: yes
       enabled: yes

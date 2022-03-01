@@ -1,0 +1,10 @@
+[Unit]
+Description=Pihole Sync script service every 15 min
+Requires=docker-wireguard-pihole-sync.service
+
+[Timer]
+Unit=docker-wireguard-pihole-sync.service
+OnCalendar=*:0/15
+
+[Install]
+WantedBy=timers.target
