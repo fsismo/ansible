@@ -2,7 +2,7 @@
 # Provee vpn y DNS con filtro de publicidad.
 # Sincroniza un lan.list para tener dns interno.
 ---
-- hosts: rbpi3-002.sismonda.local #,rbpi3-004.sismonda.local
+- hosts: rbpi3-002.sismonda.local,rbpi3-003.sismonda.local,rbpi3-004.sismonda.local
   become: yes
 
   tasks:
