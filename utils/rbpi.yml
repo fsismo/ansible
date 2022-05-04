@@ -22,8 +22,17 @@
 
   - name: Copiar rbpi-backup.sh
     template:
-      src: /etc/ansible/utils/rbpi-backup/rbpi-backup.sh
+      src: /etc/ansible/utils/rbpi/rbpi-backup.sh
       dest: /opt/utils/rbpi-backup.sh
+      owner: root
+      group: root
+      mode: 0700
+      backup: yes
+
+  - name: Copiar rbpi-temp.sh
+    template:
+      src: /etc/ansible/utils/rbpi/rbpi-temp.sh
+      dest: /opt/utils/rbpi-temp.sh
       owner: root
       group: root
       mode: 0700
@@ -31,7 +40,7 @@
 
   - name: Copiar rbpi-backup-crond.conf
     template:
-      src: /etc/ansible/utils/rbpi-backup/rbpi-backup-crond.conf
+      src: /etc/ansible/utils/rbpi/rbpi-backup-crond.conf
       dest: /etc/cron.d/rbpi-backup-crond
       owner: root
       group: root

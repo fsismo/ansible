@@ -1,0 +1,11 @@
+[Unit]
+Description=WAdmin Service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/WAdmin
+ExecStart=/opt/WAdmin/run.sh start
+ExecStop=/opt/WAdmin/run.sh stop
+TimeoutStartSec=0
+[Install]
+WantedBy=multi-user.target

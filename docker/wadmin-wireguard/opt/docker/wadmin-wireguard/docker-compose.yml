@@ -1,0 +1,42 @@
+---
+# docker container exec -u 0 -it LinuxAlways bash
+version: "3.4"
+services:
+  ubu2004_apache_wadmin:
+    image: ubu2004_apache_wadmin:v1.0.11
+    container_name: ubu2004_apache_wadmin 
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+    volumes:
+      - /var/sambashare:/var/sambashare
+      - /tmp/WAdmin:/dev/shm/WAdmin
+    ports:
+      - 80:80
+    restart: unless-stopped
+  wireguard:
+    image: linuxserver/wireguard
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Argentina/Buenos_Aires
+      - SERVERURL=www.sismonda.com.ar #optional ip or domain of your server
+      - SERVERPORT=51820 #optional
+      - PEERS=10 #optional
+      - PEERDNS=auto #optional
+      - INTERNAL_SUBNET=10.13.13.0 #optional
+    volumes:
+      - /opt/docker/wadmin-wireguard/wireguard/config:/config
+      - /lib/modules:/lib/modules
+      - /usr/src:/usr/src
+    ports:
+      - 51820:51820/udp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4 
+    restart: unless-stopped

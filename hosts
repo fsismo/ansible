@@ -1,6 +1,7 @@
 [servidores]
 	alphaprime.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 	blackmamba.sismonda.local	ansible_python_interpreter=/usr/bin/python3
+#	sandbox.sismonda.local		ansible_python_interpreter=/usr/bin/python3
 
 [rbpi3]
 	rbpi3-001.sismonda.local	ansible_connection=local	ansible_python_interpreter=/usr/bin/python3
@@ -15,7 +16,7 @@
 	rbpi4-004.sismonda.local
 	rbpi4-005.sismonda.local
 	rbpi4-006.sismonda.local
-	rbpi4-desktop.sismonda.local	
+	rbpi-sandbox.sismonda.local	
 
 [rbpiz]
 	rbpiz-[001:002].sismonda.local	ansible_python_interpreter=/usr/bin/python3
@@ -24,3 +25,7 @@
 	rbpi3-001.sismonda.local
         rbpi4-002.sismonda.local        ansible_python_interpreter=/usr/bin/python3
         rbpiz-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
+
+[always]
+	always.mygadgets.com.ar:1222	ansible_python_interpreter=/usr/bin/python3
+	#always.mygadgets.com.ar		ansible_python_interpreter=/usr/bin/python3

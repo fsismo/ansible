@@ -1,0 +1,55 @@
+# Despliega un docker-compose.yml con un contenedor con apache/php y  mysql 
+# not finish 2022 05 04
+---
+- hosts: rbpi-sandbox.sismonda.local
+  become: yes
+
+  tasks:
+  - name: Instalar docker.io, docker-compose, pv
+    package:
+      name:
+       - docker.io
+       - docker-compose
+       - pv
+       - rsync
+
+  - name: Set timezone to America/Argentina/Buenos_Aires
+    community.general.timezone:
+      name: America/Argentina/Buenos_Aires
+
+  - name: Crear directorio /opt/docker/ 
+    file:
+      path: /opt/docker/apache-mysql/mariadb/data
+      state: directory
+
+  - name: Copiar docker-compose
+    template:
+      src: /etc/ansible/docker/apache-mysql/opt/docker/apache-mysql/docker-compose.yml
+      dest: /opt/docker/apache-mysql/docker-compose.yml
+      owner: root
+      group: root
+      mode: 0554
+      backup: yes
+
+  - name: Copiar docker-apache-mysql.service 
+    template:
+      src: /etc/ansible/docker/apache-mysql/etc/systemd/system/docker-apache-mysql.service
+      dest: /etc/systemd/system/docker-apache-mysql.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Configurar ejecución de Docker.
+    systemd:
+      name: docker
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Configurar ejecución de docker-apache-mysql.service
+    systemd:
+      name: docker-apache-mysql.service
+      state: started 
+      daemon_reload: yes
+      enabled: yes

@@ -1,0 +1,135 @@
+# Despliega un docker-compose.yml con un contenedor de wadmin y otro de wireguard.
+---
+- hosts: sandbox.sismonda.local, always.mygadgets.com.ar
+  become: yes
+
+  handlers:
+  - name: Docker_load_image
+    ansible.builtin.command: docker image load -i /var/docker/images/wadmin/ubu2004_apache_wadmin-v1.0.11.tar
+  - name: Samba_Config
+    ansible.builtin.command: /bin/bash /opt/WAdmin/utils/samba-include.sh
+
+  tasks:
+  - name: Instalar docker.io, docker-compose, pv, samba 
+    package:
+      name:
+       - docker.io
+       - docker-compose
+       - pv
+       - rsync
+       - samba
+
+  - name: Create group
+    group:
+      name: sharegroup
+      state: present
+
+  - name: Add the user for the samba share "shareuser"
+    ansible.builtin.user:
+      name: shareuser
+      comment: Samba user for shared folder
+      group: sharegroup 
+      shell: /usr/sbin/nologin
+
+  - name: Set timezone to America/Argentina/Buenos_Aires
+    community.general.timezone:
+      name: America/Argentina/Buenos_Aires
+
+  - name: Crear directorio /opt/WAdmin/modules
+    file:
+      path: /opt/WAdmin/modules
+      state: directory
+
+  - name: Crear directorio /var/fs 
+    file:
+      path: /var/fs
+      state: directory
+
+  - name: Crear directorio /etc/samba/smb.conf.d/
+    file:
+      path: /etc/samba/smb.conf.d/
+      state: directory
+
+  - name: Sync /opt/WAdmin
+    ansible.posix.synchronize:
+      src: /etc/ansible/docker/wadmin-wireguard/opt/WAdmin/ 
+      dest: /opt/WAdmin/ 
+
+  - name: Crear directorio /var/docker/images/wadmin
+    file:
+      path: /var/docker/images/wadmin
+      state: directory
+
+  - name: Crear directorio /opt/docker/wadmin-wireguard 
+    file:
+      path: /opt/docker/wadmin-wireguard
+      state: directory
+
+  - name: SYNC wadmin docker image 
+    ansible.posix.synchronize:
+      src: /mnt/storage/dockerimages/wadmin/
+      dest: /var/docker/images/wadmin
+    notify:
+      - Docker_load_image 
+
+  - name: SYNC samba conf 
+    ansible.posix.synchronize:
+      src: /etc/ansible/docker/wadmin-wireguard/etc/samba/smb.conf.d/ 
+      dest: /etc/samba/smb.conf.d
+    notify:
+      - Samba_Config  
+
+  - name: Sync Crashplan.tar.gz
+    ansible.posix.synchronize:
+      src: /mnt/storage/Downloads/software/crashplan/CrashPlanSmb_8.8.4_1525200006884_17_Linux.tgz
+      dest: /var/tmp/crashplan.tgz 
+
+  - name: Copiar docker-compose
+    template:
+      src: /etc/ansible/docker/wadmin-wireguard/opt/docker/wadmin-wireguard/docker-compose.yml
+      dest: /opt/docker/wadmin-wireguard/docker-compose.yml
+      owner: root
+      group: root
+      mode: 0554
+      backup: yes
+
+  - name: Copiar wadmin-run.service
+    template:
+      src: /etc/ansible/docker/wadmin-wireguard/etc/systemd/system/wadmin-run.service
+      dest: /etc/systemd/system/wadmin-run.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar docker-wadmin-wireguard.service 
+    template:
+      src: /etc/ansible/docker/wadmin-wireguard/etc/systemd/system/docker-wadmin-wireguard.service
+      dest: /etc/systemd/system/docker-wadmin-wireguard.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - meta: flush_handlers
+
+  - name: Configurar ejecución de wadmin-run.service
+    systemd:
+      name: wadmin-run.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Configurar ejecución de Docker.
+    systemd:
+      name: docker
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Configurar ejecución de docker-wadmin-wireguard.service
+    systemd:
+      name: docker-wadmin-wireguard.service
+      state: started 
+      daemon_reload: yes
+      enabled: yes
