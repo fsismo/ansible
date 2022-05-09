@@ -1,5 +1,5 @@
 [Unit]
-Description=Pihole Sync script service every 15 min
+Description=Pihole Sync script service every 5 min
 Requires=docker-wireguard-pihole-sync.service
 
 [Timer]
