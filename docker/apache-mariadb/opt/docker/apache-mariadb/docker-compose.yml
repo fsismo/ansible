@@ -6,6 +6,7 @@ services:
     environment:
       - TZ=America/Argentina/Buenos_Aires
       - MARIADB_ROOT_PASSWORD=S3cr3t0
+      - BACKUP_RETENTION=30
     restart: always
     ports:
       - 3306:3306

@@ -11,7 +11,7 @@
        - elinks
        - ethtool
        - exfat-fuse
-       - exfat-utils
+#       - exfat-utils
        - fail2ban
        - iperf3
        - iftop
