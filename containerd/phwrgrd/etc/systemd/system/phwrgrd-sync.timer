@@ -1,0 +1,10 @@
+[Unit]
+Description=Pihole Sync script service every 5 min
+Requires=phwrgrd-sync.service
+
+[Timer]
+Unit=phwrgrd-sync.service
+OnCalendar=*:0/5
+
+[Install]
+WantedBy=timers.target

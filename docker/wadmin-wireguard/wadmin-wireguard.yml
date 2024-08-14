@@ -1,35 +1,21 @@
 # Despliega un docker-compose.yml con un contenedor de wadmin y otro de wireguard.
 ---
-- hosts: sandbox.sismonda.local, always.mygadgets.com.ar
+#- hosts: sandbox.sismonda.local #, always.mygadgets.com.ar
+- hosts: always-crc.mygadgets.com.ar
   become: yes
 
   handlers:
   - name: Docker_load_image
     ansible.builtin.command: docker image load -i /var/docker/images/wadmin/ubu2004_apache_wadmin-v1.0.11.tar
-  - name: Samba_Config
-    ansible.builtin.command: /bin/bash /opt/WAdmin/utils/samba-include.sh
 
   tasks:
-  - name: Instalar docker.io, docker-compose, pv, samba 
+  - name: Instalar docker.io, docker-compose, pv 
     package:
       name:
        - docker.io
        - docker-compose
        - pv
        - rsync
-       - samba
-
-  - name: Create group
-    group:
-      name: sharegroup
-      state: present
-
-  - name: Add the user for the samba share "shareuser"
-    ansible.builtin.user:
-      name: shareuser
-      comment: Samba user for shared folder
-      group: sharegroup 
-      shell: /usr/sbin/nologin
 
   - name: Set timezone to America/Argentina/Buenos_Aires
     community.general.timezone:
@@ -45,10 +31,29 @@
       path: /var/fs
       state: directory
 
-  - name: Crear directorio /etc/samba/smb.conf.d/
+  - name: Crear directorio /opt/docker/ubuntu-16.04-samba/shares-config
     file:
-      path: /etc/samba/smb.conf.d/
+      path: /opt/docker/ubuntu-16.04-samba/shares-config
       state: directory
+
+  - name: Crear directorio /opt/docker/ubuntu-16.04-samba/config/
+    file:
+      path: /opt/docker/ubuntu-16.04-samba/config/
+      state: directory
+
+  - name: Sync ubuntu-16.04-samba shares-config
+    ansible.posix.synchronize:
+      src: /etc/ansible/docker/wadmin-wireguard/opt/docker/ubuntu-16.04-samba/shares-config/
+      dest: /opt/docker/ubuntu-16.04-samba/shares-config
+
+  - name: Copiar global-tunning.conf
+    template:
+      src: /etc/ansible/docker/wadmin-wireguard/opt/docker/ubuntu-16.04-samba/config/global-tunning.conf
+      dest: /opt/docker/ubuntu-16.04-samba/config/global-tunning.conf
+      owner: root
+      group: root
+      mode: 0554
+      backup: yes
 
   - name: Sync /opt/WAdmin
     ansible.posix.synchronize:
@@ -72,22 +77,24 @@
     notify:
       - Docker_load_image 
 
-  - name: SYNC samba conf 
-    ansible.posix.synchronize:
-      src: /etc/ansible/docker/wadmin-wireguard/etc/samba/smb.conf.d/ 
-      dest: /etc/samba/smb.conf.d
-    notify:
-      - Samba_Config  
-
   - name: Sync Crashplan.tar.gz
     ansible.posix.synchronize:
       src: /mnt/storage/Downloads/software/crashplan/CrashPlanSmb_8.8.4_1525200006884_17_Linux.tgz
       dest: /var/tmp/crashplan.tgz 
 
-  - name: Copiar docker-compose
+  - name: Copiar Wadmin-Wireguard docker-compose
     template:
       src: /etc/ansible/docker/wadmin-wireguard/opt/docker/wadmin-wireguard/docker-compose.yml
       dest: /opt/docker/wadmin-wireguard/docker-compose.yml
+      owner: root
+      group: root
+      mode: 0554
+      backup: yes
+
+  - name: Copiar ubuntu-16.04-samba docker-compose
+    template:
+      src: /etc/ansible/docker/wadmin-wireguard/opt/docker/ubuntu-16.04-samba/docker-compose.yml
+      dest: /opt/docker/ubuntu-16.04-samba/docker-compose.yml
       owner: root
       group: root
       mode: 0554
@@ -111,6 +118,15 @@
       mode: 0644
       backup: yes
 
+  - name: Copiar docker-ubuntu-16.04-samba.service 
+    template:
+      src: /etc/ansible/docker/wadmin-wireguard/etc/systemd/system/docker-ubuntu-16.04-samba.service
+      dest: /etc/systemd/system/docker-ubuntu-16.04-samba.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
   - meta: flush_handlers
 
   - name: Configurar ejecución de wadmin-run.service
@@ -124,6 +140,13 @@
     systemd:
       name: docker
       state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Configurar ejecución de docker-ubuntu-16.04-samba.service
+    systemd:
+      name: docker-ubuntu-16.04-samba.service
+      state: started 
       daemon_reload: yes
       enabled: yes
 

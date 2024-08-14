@@ -1,0 +1,17 @@
+  - name: Instalar containerd
+    package:
+      name:
+       - containerd 
+
+  - name: Download and uncompress nerdctl-full
+    unarchive:
+      src: https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-full-1.7.6-linux-arm64.tar.gz
+      dest: /usr/local
+      remote_src: yes
+      
+  - name: Configurar ejecución de Containerd
+    systemd:
+      name: containerd 
+      state: started
+      daemon_reload: yes
+      enabled: yes

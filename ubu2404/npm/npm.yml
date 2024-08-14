@@ -1,0 +1,37 @@
+---
+- hosts: rbpi4004.sismonda.local 
+  become: yes
+
+  tasks:
+  - name: Include Nerdctl Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio /opt/docker/npm
+    file:
+      path: /opt/docker/npm
+      state: directory
+
+  - name: Copiar Compose
+    template:
+      src: /etc/ansible/ubu2404/npm/opt/docker/npm/compose.yml
+      dest: /opt/docker/npm/compose.yml
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar npm.service
+    template:
+      src: /etc/ansible/ubu2404/npm/etc/systemd/system/npm.service
+      dest: /etc/systemd/system/npm.service
+      owner: root
+      group: root
+      mode: 0755
+      backup: yes
+      
+  - name: Configurar ejecución de npm.service.
+    systemd:
+      name: npm.service
+      state: started
+      daemon_reload: yes
+      enabled: yes

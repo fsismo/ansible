@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  app:
+    image: 'jc21/nginx-proxy-manager'
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - /var/docker-data/npm/npm-data:/data
+      - /var/docker-data/npm/npm-letsencrypt:/etc/letsencrypt
+    restart: unless-stopped
+
+# Default usr y pwd
+# Email:    admin@example.com
+# Password: changeme

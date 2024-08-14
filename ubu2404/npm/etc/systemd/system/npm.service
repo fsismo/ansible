@@ -1,0 +1,13 @@
+[Unit]
+Description= Nginx Proxy Manager - Container
+Requires=containerd.service
+After=containerd.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/docker/npm/
+ExecStart=/usr/local/bin/docker compose up -d
+ExecStop=/usr/local/bin/docker compose down
+TimeoutStartSec=0
+[Install]
+WantedBy=multi-user.target

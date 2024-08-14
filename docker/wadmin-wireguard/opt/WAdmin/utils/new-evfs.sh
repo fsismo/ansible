@@ -18,7 +18,7 @@ function CREATEDIR {
         mkdir -p /var/sambashare/backup
         mkdir -p /var/sambashare/compartido
         mkdir -p /var/sambashare/gestion
-	chown shareuser.sharegroup -R /var/sambashare/
+	chown 1001.1001 -R /var/sambashare/
 }
 
 if [ -f /var/fs/encrypted.fs ]; then

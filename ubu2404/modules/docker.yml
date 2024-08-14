@@ -1,0 +1,12 @@
+  - name: Instalar Docker / Docker Compose v2
+    package:
+      name:
+       - docker.io
+       - docker-compse-v2 
+
+  - name: Configurar ejecución de docker
+    systemd:
+      name: docker
+      state: started
+      daemon_reload: yes
+      enabled: yes

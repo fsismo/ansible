@@ -1,4 +1,4 @@
-# Despliega un docker-compose.yml con un contenedor de pihole y otro de wireguard.
+# Despliega un compose.yml con un contenedor de pihole y otro de wireguard.
 # Provee vpn y DNS con filtro de publicidad.
 # Sincroniza un lan.list para tener dns interno.
 ---
@@ -6,11 +6,10 @@
   become: yes
 
   tasks:
-  - name: Instalar docker.io, docker-compose, nfs-common y rysnc.
+  - name: Instalar containerd, nfs-common y rysnc.
     package:
       name:
-       - docker.io
-       - docker-compose
+       - containerd 
        - nfs-common
        - rsync
 
@@ -24,9 +23,9 @@
       path: /mnt/storage
       state: directory
 
-  - name: Crear directorio /opt/docker/wireguard-pihole
+  - name: Crear directorio /opt/containerd/phwrgrd
     file:
-      path: /opt/docker/wireguard-pihole/pihole/etc/dnsmasq.d
+      path: /opt/containerd/phwrgrd/pihole/etc/dnsmasq.d
       state: directory
 
   - name: Crear directorio /opt/utils
@@ -42,10 +41,10 @@
       opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
       state: mounted
 
-  - name: Copiar docker-compose
+  - name: Copiar compose.yml
     template:
-      src: /etc/ansible/docker/pi-hole-wireguard/opt/docker/wireguard-pihole/docker-compose.yml
-      dest: /opt/docker/wireguard-pihole/docker-compose.yml
+      src: /etc/ansible/containerd/phwrgrd/opt/containerd/phwrgrd/docker-compose.yml
+      dest: /opt/containerd/phwrgrd/docker-compose.yml
       owner: root
       group: root
       mode: 0640
@@ -53,7 +52,7 @@
 
   - name: Pi-Hole sync script
     template:
-      src: /etc/ansible/docker/pi-hole-wireguard/opt/utils/pihole-sync-slave.sh
+      src: /etc/ansible/containerd/phwrgrd/opt/utils/pihole-sync-slave.sh
       dest: /opt/utils/pihole-sync-slave.sh
       owner: root
       group: root
@@ -62,44 +61,50 @@
 
   - name: Pi-Hole sync script conf
     template:
-      src: /etc/ansible/docker/pi-hole-wireguard/opt/utils/pihole-sync-slave.conf
+      src: /etc/ansible/containerd/phwrgrd/opt/utils/pihole-sync-slave.conf
       dest: /opt/utils/pihole-sync-slave.conf
       owner: root
       group: root
       mode: 0640
       backup: yes
 
-  - name: Copiar docker-wireguard-pihole.service
+  - name: Copiar phwrgrd.service
     template:
-      src: /etc/ansible/docker/pi-hole-wireguard/etc/systemd/system/docker-wireguard-pihole.service
-      dest: /etc/systemd/system/docker-wireguard-pihole.service
+      src: /etc/ansible/containerd/phwrgrd/etc/systemd/system/phwrgrd.service
+      dest: /etc/systemd/system/phwrgrd.service
       owner: root
       group: root
-      mode: 0644
+      mode: 0755
       backup: yes
 
-  - name: Copiar docker-wireguard-pihole-sync.service
+  - name: Copiar phwrgrd-sync.service
     template:
-      src: /etc/ansible/docker/pi-hole-wireguard/etc/systemd/system/docker-wireguard-pihole-sync.service
-      dest: /etc/systemd/system/docker-wireguard-pihole-sync.service
+      src: /etc/ansible/containerd/phwrgrd/etc/systemd/system/phwrgrd-sync.service
+      dest: /etc/systemd/system/phwrgrd-sync.service
       owner: root
       group: root
-      mode: 0644
+      mode: 0755
       backup: yes
 
-  - name: Copiar docker-wireguard-pihole-sync.timer
+  - name: Copiar phwrgrd-sync.timer
     template:
-      src: /etc/ansible/docker/pi-hole-wireguard/etc/systemd/system/docker-wireguard-pihole-sync.timer
-      dest: /etc/systemd/system/docker-wireguard-pihole-sync.timer
+      src: /etc/ansible/containerd/phwrgrd/etc/systemd/system/phwrgrd-sync.timer
+      dest: /etc/systemd/system/phwrgrd-sync.timer
       owner: root
       group: root
-      mode: 0644
+      mode: 0755
       backup: yes
+
+  - name: Unarchive nerdctl-full
+    unarchive:
+      src: https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-full-1.7.6-linux-arm64.tar.gz 
+      dest: /usr/local
+      remote_src: yes
 
   - name: Copiar dnsmasq lan definion file
     template:
-      src: /etc/ansible/docker/pi-hole/opt/docker/pihole/etc/dnsmasq.d/02-lan.conf
-      dest: /opt/docker/wireguard-pihole/pihole/etc/dnsmasq.d/02-lan.conf
+      src: /etc/ansible/containerd/phwrgrd/opt/containerd/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
+      dest: /opt/containerd/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
       owner: root
       group: root
       mode: 0644
@@ -112,17 +117,23 @@
       daemon_reload: yes
       enabled: no
 
-  - name: Borro si es un link simbólico /etc/resolv.conf
+  - stat:
+      path: /etc/resolv.conf
+    register: link
+
+  - name: Borro /etc/resolv.conf si es un symlink
     file:
       path: /etc/resolv.conf
       state: absent
-    when: /etc/resolv.conf | is_link
+    when: link.stat.islnk is defined and link.stat.islnk
 
-  -  name: Si el /etc/resolv.conf no existe lo creo
-    copy:
-      content: "{{ nameserver 127.0.0.53\noptions edns0 trust-ad\nsearch . }}"
-      dest: /etc/resolv.conf
-      force: false
+  - name: Si el /etc/resolv.conf no existe lo creo
+    blockinfile:
+      path: /etc/resolv.conf
+      block: |
+        'nameserver 127.0.0.53'
+        'options edns0 trust-ad'
+        'search .'
       group: root
       owner: root
       mode: 0644
@@ -133,23 +144,23 @@
       regexp: '^nameserver 127.0.0.53'
       line: 'nameserver 8.8.8.8'
 
-  - name: Configurar ejecución de Docker.
+  - name: Configurar ejecución de Containerd
     systemd:
-      name: docker
+      name: containerd 
       state: started
       daemon_reload: yes
       enabled: yes
 
-  - name: Configurar ejecución de docker-wireguard-pihole.service.
+  - name: Configurar ejecución de phwrgrd.service.
     systemd:
-      name: docker-wireguard-pihole.service
+      name: phwrgrd.service
       state: started
       daemon_reload: yes
       enabled: yes
 
-  - name: Configurar ejecución de docker-wireguard-pihole-sync.timer
+  - name: Configurar ejecución de phwrgrd-sync.timer
     systemd:
-      name: docker-wireguard-pihole-sync.timer
+      name: phwrgrd-sync.timer
       state: started
       daemon_reload: yes
       enabled: yes
