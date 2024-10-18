@@ -1,13 +1,17 @@
 #!/bin/bash
-mount /mnt/storage
+NFS_MOUNT_POINT="/mnt/storage"  # Replace with your actual NFS mount point
 
-
-#!/bin/bash
+if ! mountpoint -q $NFS_MOUNT_POINT; then
+    echo "NFS is not mounted. Attempting to mount..."
+    sudo mount $NFS_MOUNT_POINT
+    if ! mountpoint -q $NFS_MOUNT_POINT; then
+        echo "Failed to mount NFS. Exiting."
+        exit 1
+    fi
+fi
 
 # Function to start the application
 start_app() {
-    mount /mnt/storage
-    if [ -d /mnt/storage/Downloads/transmission/ ]; then
         docker compose up -d
     else
         echo "El storage no pudo ser montado"

@@ -40,6 +40,15 @@
       mode: 0640
       backup: yes
 
+  - name: Copiar do.sh
+    template:
+      src: /etc/ansible/ubu2404/torrents/opt/docker/torrents/do.sh
+      dest: /opt/docker/torrents/do.sh
+      owner: root
+      group: root
+      mode: 0755
+      backup: yes
+
   - name: Copiar torrents.service
     template:
       src: /etc/ansible/ubu2404/torrents/etc/systemd/system/torrents.service
