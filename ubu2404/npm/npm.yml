@@ -1,5 +1,5 @@
 ---
-- hosts: rbpi4004.sismonda.local 
+- hosts: rbpi4003.sismonda.local, rbpi4004.sismonda.local 
   become: yes
 
   tasks:
@@ -26,7 +26,7 @@
       dest: /etc/systemd/system/npm.service
       owner: root
       group: root
-      mode: 0755
+      mode: 0644
       backup: yes
       
   - name: Configurar ejecución de npm.service.

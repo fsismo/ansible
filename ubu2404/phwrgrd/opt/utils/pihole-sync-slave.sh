@@ -1,5 +1,5 @@
 #!/bin/bash
-CHGPH=$(rsync -az -i --files-from=/opt/utils/pihole-sync-slave.conf /mnt/storage/pihole /opt/containerd/phwrgrd/pihole/etc/pihole |grep 'f')
+CHGPH=$(rsync -az -i --files-from=/opt/utils/pihole-sync-slave.conf /mnt/storage/pihole /opt/docker/phwrgrd/pihole/etc/pihole |grep 'f')
 
 if [ -n "$CHGDM" ] || [ -n "$CHGPH" ]; then
 	echo "restart dns"

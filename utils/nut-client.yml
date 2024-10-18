@@ -1,5 +1,5 @@
 ---
-- hosts: all:!rbpi4-002.sismonda.local 
+- hosts: all:!rbpi4002.sismonda.local 
   become: yes 
   handlers:
    - name: restart_service

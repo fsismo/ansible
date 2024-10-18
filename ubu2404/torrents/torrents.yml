@@ -1,0 +1,57 @@
+# Despliega un compose.yml con prowlarr, radarr, sonarr, transmission
+---
+- hosts: rbpi4003.sismonda.local, rbpi4006.sismonda.local
+  become: yes
+
+  tasks:
+  - name: Include Docker Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Instalar containerd, nfs-common y rysnc.
+    package:
+      name:
+       - nfs-common
+       - rsync
+
+  - name: Crear directorio /mnt/storage
+    file:
+      path: /mnt/storage
+      state: directory
+
+  - name: Crear directorio /opt/docker/torrents
+    file:
+      path: /opt/docker/torrents
+      state: directory
+
+  - name: Mount up device by label
+    mount:
+      path: /mnt/storage
+      src: 10.0.0.9:/storage
+      fstype: nfs
+      opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
+      state: mounted
+
+  - name: Copiar compose.yml
+    template:
+      src: /etc/ansible/ubu2404/torrents/opt/docker/torrents/compose.yml
+      dest: /opt/docker/torrents/compose.yml
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar torrents.service
+    template:
+      src: /etc/ansible/ubu2404/torrents/etc/systemd/system/torrents.service
+      dest: /etc/systemd/system/torrents.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Configurar ejecución de torrents.service.
+    systemd:
+      name: torrents.service
+      state: started
+      daemon_reload: yes
+      enabled: yes

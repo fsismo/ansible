@@ -1,32 +1,34 @@
 [servidores]
 	alphaprime.sismonda.local	ansible_python_interpreter=/usr/bin/python3
-	blackmamba.sismonda.local	ansible_python_interpreter=/usr/bin/python3
+#	blackmamba.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 #	sandbox.sismonda.local		ansible_python_interpreter=/usr/bin/python3
 
 [rbpi3]
 	rbpi3-001.sismonda.local	ansible_connection=local	ansible_python_interpreter=/usr/bin/python3
-	rbpi3-002.sismonda.local
+#	rbpi3-002.sismonda.local
 #	rbpi3-003.sismonda.local
-	rbpi3-004.sismonda.local
+#	rbpi3-004.sismonda.local
 
 [rbpi4]
 	rbpi4001.sismonda.local
-	rbpi4-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
-#	rbpi4-003.sismonda.local
+	rbpi4002.sismonda.local	
+	rbpi4003.sismonda.local
 	rbpi4004.sismonda.local
-	rbpi4-005.sismonda.local
-#	rbpi4-006.sismonda.local
+#	rbpi4005.sismonda.local
+	rbpi4006.sismonda.local
 #	rbpi-sandbox.sismonda.local	
 
 [dns]
 	rbpi3-001.sismonda.local
-        rbpi4-002.sismonda.local        ansible_python_interpreter=/usr/bin/python3
-        rbpiz-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
+#        rbpiz-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 
 [phwrgrd]
+	rbpi4002.sismonda.local
+	rbpi4003.sismonda.local
 	rbpi4004.sismonda.local
+	rbpi4006.sismonda.local
 
 [always]
 #	always.mygadgets.com.ar:1222	ansible_python_interpreter=/usr/bin/python3
 #	always-sldd.mygadgets.com.ar	ansible_python_interpreter=/usr/bin/python3
-always-crc.mygadgets.com.ar	ansible_python_interpreter=/usr/bin/python3
+#	always-crc.mygadgets.com.ar	ansible_python_interpreter=/usr/bin/python3

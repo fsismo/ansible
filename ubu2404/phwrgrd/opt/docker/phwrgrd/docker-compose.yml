@@ -18,7 +18,7 @@ services:
       - PEERDNS=auto #optional
       - INTERNAL_SUBNET=10.13.13.0 #optional
     volumes:
-      - /opt/containerd/phwrgrd/wireguard/config:/config
+      - /opt/docker/phwrgrd/wireguard/config:/config
       - /lib/modules:/lib/modules
       - /usr/src:/usr/src
     ports:
@@ -42,14 +42,14 @@ services:
       - "53:53/tcp"
       - "53:53/udp"
       - "67:67/udp"
-      - "80:80/tcp"
-      - "443:443/tcp"
+      - "9080:80/tcp"
+      - "9443:443/tcp"
     environment:
       TZ: 'America/Argentina/Buenos_Aires'
       WEBPASSWORD: S3cr3t0
     volumes:
-      - '/opt/containerd/phwrgrd/pihole/etc/pihole/:/etc/pihole/'
-      - '/opt/containerd/phwrgrd/pihole/etc/dnsmasq.d/:/etc/dnsmasq.d/'
+      - '/opt/docker/phwrgrd/pihole/etc/pihole/:/etc/pihole/'
+      - '/opt/docker/phwrgrd/pihole/etc/dnsmasq.d/:/etc/dnsmasq.d/'
     # Recommended but not required (DHCP needs NET_ADMIN)
     #cap_add:
     #  - NET_ADMIN

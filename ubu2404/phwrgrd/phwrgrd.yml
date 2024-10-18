@@ -6,10 +6,12 @@
   become: yes
 
   tasks:
+  - name: Include Docker Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
   - name: Instalar containerd, nfs-common y rysnc.
     package:
       name:
-       - containerd 
        - nfs-common
        - rsync
 
@@ -23,9 +25,9 @@
       path: /mnt/storage
       state: directory
 
-  - name: Crear directorio /opt/containerd/phwrgrd
+  - name: Crear directorio /opt/docker/phwrgrd
     file:
-      path: /opt/containerd/phwrgrd/pihole/etc/dnsmasq.d
+      path: /opt/docker/phwrgrd/pihole/etc/dnsmasq.d
       state: directory
 
   - name: Crear directorio /opt/utils
@@ -43,8 +45,8 @@
 
   - name: Copiar compose.yml
     template:
-      src: /etc/ansible/containerd/phwrgrd/opt/containerd/phwrgrd/docker-compose.yml
-      dest: /opt/containerd/phwrgrd/docker-compose.yml
+      src: /etc/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/docker-compose.yml
+      dest: /opt/docker/phwrgrd/docker-compose.yml
       owner: root
       group: root
       mode: 0640
@@ -52,7 +54,7 @@
 
   - name: Pi-Hole sync script
     template:
-      src: /etc/ansible/containerd/phwrgrd/opt/utils/pihole-sync-slave.sh
+      src: /etc/ansible/ubu2404/phwrgrd/opt/utils/pihole-sync-slave.sh
       dest: /opt/utils/pihole-sync-slave.sh
       owner: root
       group: root
@@ -61,7 +63,7 @@
 
   - name: Pi-Hole sync script conf
     template:
-      src: /etc/ansible/containerd/phwrgrd/opt/utils/pihole-sync-slave.conf
+      src: /etc/ansible/ubu2404/phwrgrd/opt/utils/pihole-sync-slave.conf
       dest: /opt/utils/pihole-sync-slave.conf
       owner: root
       group: root
@@ -70,41 +72,35 @@
 
   - name: Copiar phwrgrd.service
     template:
-      src: /etc/ansible/containerd/phwrgrd/etc/systemd/system/phwrgrd.service
+      src: /etc/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd.service
       dest: /etc/systemd/system/phwrgrd.service
       owner: root
       group: root
-      mode: 0755
+      mode: 0644
       backup: yes
 
   - name: Copiar phwrgrd-sync.service
     template:
-      src: /etc/ansible/containerd/phwrgrd/etc/systemd/system/phwrgrd-sync.service
+      src: /etc/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd-sync.service
       dest: /etc/systemd/system/phwrgrd-sync.service
       owner: root
       group: root
-      mode: 0755
+      mode: 0644
       backup: yes
 
   - name: Copiar phwrgrd-sync.timer
     template:
-      src: /etc/ansible/containerd/phwrgrd/etc/systemd/system/phwrgrd-sync.timer
+      src: /etc/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd-sync.timer
       dest: /etc/systemd/system/phwrgrd-sync.timer
       owner: root
       group: root
-      mode: 0755
+      mode: 0644
       backup: yes
-
-  - name: Unarchive nerdctl-full
-    unarchive:
-      src: https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-full-1.7.6-linux-arm64.tar.gz 
-      dest: /usr/local
-      remote_src: yes
 
   - name: Copiar dnsmasq lan definion file
     template:
-      src: /etc/ansible/containerd/phwrgrd/opt/containerd/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
-      dest: /opt/containerd/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
+      src: /etc/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
+      dest: /opt/docker/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
       owner: root
       group: root
       mode: 0644
@@ -127,29 +123,21 @@
       state: absent
     when: link.stat.islnk is defined and link.stat.islnk
 
+  - stat:
+      path: "/etc/resolv.conf"
+    register: file_resolv
+
   - name: Si el /etc/resolv.conf no existe lo creo
-    blockinfile:
-      path: /etc/resolv.conf
-      block: |
-        'nameserver 127.0.0.53'
-        'options edns0 trust-ad'
-        'search .'
+    copy:
+      dest: /etc/resolv.conf
+      content: |
+        nameserver 8.8.8.8 
+        options edns0 trust-ad
+        search .
       group: root
       owner: root
       mode: 0644
-
-  - name: Configurando /etc/resolv.conf para utilizar pihole
-    lineinfile:
-      path: /etc/resolv.conf
-      regexp: '^nameserver 127.0.0.53'
-      line: 'nameserver 8.8.8.8'
-
-  - name: Configurar ejecución de Containerd
-    systemd:
-      name: containerd 
-      state: started
-      daemon_reload: yes
-      enabled: yes
+    when: file_resolv.stat.exists == False
 
   - name: Configurar ejecución de phwrgrd.service.
     systemd:
