@@ -1,6 +1,6 @@
 # Despliega un compose.yml con prowlarr, radarr, sonarr, transmission
 ---
-- hosts: rbpi4003.sismonda.local, rbpi4006.sismonda.local
+- hosts: rbpi4003.sismonda.local
   become: yes
 
   tasks:
@@ -33,7 +33,7 @@
 
   - name: Copiar compose.yml
     template:
-      src: /etc/ansible/ubu2404/torrents/opt/docker/torrents/compose.yml
+      src: /mnt/storage/ansible/ubu2404/torrents/opt/docker/torrents/compose.yml
       dest: /opt/docker/torrents/compose.yml
       owner: root
       group: root
@@ -42,7 +42,7 @@
 
   - name: Copiar do.sh
     template:
-      src: /etc/ansible/ubu2404/torrents/opt/docker/torrents/do.sh
+      src: /mnt/storage/ansible/ubu2404/torrents/opt/docker/torrents/do.sh
       dest: /opt/docker/torrents/do.sh
       owner: root
       group: root
@@ -51,7 +51,7 @@
 
   - name: Copiar torrents.service
     template:
-      src: /etc/ansible/ubu2404/torrents/etc/systemd/system/torrents.service
+      src: /mnt/storage/ansible/ubu2404/torrents/etc/systemd/system/torrents.service
       dest: /etc/systemd/system/torrents.service
       owner: root
       group: root

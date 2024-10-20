@@ -13,9 +13,6 @@ fi
 # Function to start the application
 start_app() {
         docker compose up -d
-    else
-        echo "El storage no pudo ser montado"
-    fi
 }
 
 # Function to stop the application
