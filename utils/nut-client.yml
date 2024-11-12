@@ -16,7 +16,7 @@
 
   - name: Copiar nut.conf.
     template:
-      src: /etc/ansible/utils/nut/nut.conf 
+      src: /mnt/storage/ansible/utils/nut/nut.conf 
       dest: /etc/nut/nut.conf
       owner: root
       group: nut
@@ -27,7 +27,7 @@
 
   - name: Copiar upsmon.conf.
     template:
-      src: /etc/ansible/utils/nut/upsmon.conf 
+      src: /mnt/storage/ansible/utils/nut/upsmon.conf 
       dest: /etc/nut/upsmon.conf
       owner: root
       group: nut
@@ -37,7 +37,7 @@
 
   - name: Copiar upssched.conf.
     template:
-      src: /etc/ansible/utils/nut/upssched.conf 
+      src: /mnt/storage/ansible/utils/nut/upssched.conf 
       dest: /etc/nut/upssched.conf
       owner: root
       group: nut

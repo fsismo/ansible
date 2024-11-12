@@ -15,7 +15,7 @@
 	rbpi4003.sismonda.local
 	rbpi4004.sismonda.local
 #	rbpi4005.sismonda.local
-	rbpi4006.sismonda.local
+#	rbpi4006.sismonda.local
 #	rbpi-sandbox.sismonda.local	
 
 [dns]
@@ -26,7 +26,7 @@
 	rbpi4002.sismonda.local
 	rbpi4003.sismonda.local
 	rbpi4004.sismonda.local
-	rbpi4006.sismonda.local
+#	rbpi4006.sismonda.local
 
 [always]
 #	always.mygadgets.com.ar:1222	ansible_python_interpreter=/usr/bin/python3
