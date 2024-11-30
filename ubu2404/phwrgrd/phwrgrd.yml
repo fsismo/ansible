@@ -45,7 +45,7 @@
 
   - name: Copiar compose.yml
     template:
-      src: /etc/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/docker-compose.yml
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/docker-compose.yml
       dest: /opt/docker/phwrgrd/docker-compose.yml
       owner: root
       group: root
@@ -54,7 +54,7 @@
 
   - name: Pi-Hole sync script
     template:
-      src: /etc/ansible/ubu2404/phwrgrd/opt/utils/pihole-sync-slave.sh
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/utils/pihole-sync-slave.sh
       dest: /opt/utils/pihole-sync-slave.sh
       owner: root
       group: root
@@ -63,7 +63,7 @@
 
   - name: Pi-Hole sync script conf
     template:
-      src: /etc/ansible/ubu2404/phwrgrd/opt/utils/pihole-sync-slave.conf
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/utils/pihole-sync-slave.conf
       dest: /opt/utils/pihole-sync-slave.conf
       owner: root
       group: root
@@ -72,7 +72,7 @@
 
   - name: Copiar phwrgrd.service
     template:
-      src: /etc/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd.service
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd.service
       dest: /etc/systemd/system/phwrgrd.service
       owner: root
       group: root
@@ -81,7 +81,7 @@
 
   - name: Copiar phwrgrd-sync.service
     template:
-      src: /etc/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd-sync.service
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd-sync.service
       dest: /etc/systemd/system/phwrgrd-sync.service
       owner: root
       group: root
@@ -90,7 +90,7 @@
 
   - name: Copiar phwrgrd-sync.timer
     template:
-      src: /etc/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd-sync.timer
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/etc/systemd/system/phwrgrd-sync.timer
       dest: /etc/systemd/system/phwrgrd-sync.timer
       owner: root
       group: root
@@ -99,7 +99,7 @@
 
   - name: Copiar dnsmasq lan definion file
     template:
-      src: /etc/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
       dest: /opt/docker/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
       owner: root
       group: root
