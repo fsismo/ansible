@@ -1,0 +1,17 @@
+  - name: Instalar nfs-common
+    package:
+      name:
+       - nfs-common
+
+  - name: Crear directorio /mnt/storage
+    file:
+      path: /mnt/storage
+      state: directory
+
+  - name: Mount up device by label
+    mount:
+      path: /mnt/storage
+      src: 10.0.0.9:/storage
+      fstype: nfs
+      opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
+      state: mounted

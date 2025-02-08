@@ -9,7 +9,7 @@
   - name: Include Docker Task
     ansible.builtin.include_tasks: "../modules/docker.yml"
 
-  - name: Instalar containerd, nfs-common y rysnc.
+  - name: Instalar nfs-common y rysnc.
     package:
       name:
        - nfs-common
