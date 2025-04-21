@@ -1,0 +1,56 @@
+# Despliega un docker-compose.yml con un contenedor con apache/php y mariadb 10.6 
+# not finish 2022 05 04
+---
+- hosts: rbpi-sandbox.sismonda.local
+  become: yes
+
+  tasks:
+  - name: Instalar docker.io, docker-compose, pv
+    package:
+      name:
+        - docker.io
+        - docker-compose
+        - mariadb-client
+        - pv
+        - rsync
+
+  - name: Set timezone to America/Argentina/Buenos_Aires
+    community.general.timezone:
+      name: America/Argentina/Buenos_Aires
+
+  - name: Crear directorio /opt/docker/ 
+    file:
+      path: /opt/docker/apache-mariadb/mariadb/data
+      state: directory
+
+  - name: Copiar docker-compose
+    template:
+      src: /etc/ansible/docker/apache-mariadb/opt/docker/apache-mariadb/docker-compose.yml
+      dest: /opt/docker/apache-mariadb/docker-compose.yml
+      owner: root
+      group: root
+      mode: 0554
+      backup: yes
+
+  - name: Copiar docker-apache-mariadb.service 
+    template:
+      src: /etc/ansible/docker/apache-mariadb/etc/systemd/system/docker-apache-mariadb.service
+      dest: /etc/systemd/system/docker-apache-mariadb.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Configurar ejecución de Docker.
+    systemd:
+      name: docker
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Configurar ejecución de docker-apache-mariadb.service
+    systemd:
+      name: docker-apache-mariadb.service
+      state: started 
+      daemon_reload: yes
+      enabled: yes

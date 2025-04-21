@@ -1,0 +1,1 @@
+UPGRADE -> docker exec -i -u 33 ext-www_nextcloud_1 php /var/www/html/updater/updater.phar

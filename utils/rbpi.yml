@@ -1,5 +1,5 @@
 ---
-- hosts: rbpi4:rbpi3
+- hosts: rbpi5:rbpi4:rbpi3
   become: yes 
 
   tasks:

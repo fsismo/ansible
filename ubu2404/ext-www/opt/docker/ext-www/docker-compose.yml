@@ -1,0 +1,137 @@
+version: '3.8'
+
+networks:
+  containers:
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+
+services:
+
+  db:
+    #image: 'jc21/mariadb-aria:latest'
+    image: 'fsismo/mariadb-11-noble-auto-backups:latest'
+    restart: unless-stopped
+    ports:
+      - '3306:3306'
+    environment:
+      MARIADB_ROOT_PASSWORD: 'S3CR3T0'
+      BACKUP_RETENTION: '30'
+      MARIADB_AUTO_UPGRADE: '1'
+    volumes:
+      - /var/docker-data/ext-www/mysql/data:/var/lib/mysql
+      - /var/docker-data/ext-www/mysql/dbbackups:/var/dbbackups
+    networks:
+      containers:
+        ipv4_address: 172.31.0.10
+
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      # These ports are in format <host-port>:<container-port>
+      - '80:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '81:81' # Admin Web Port
+      # Add any other Stream port you want to expose
+      # - '21:21' # FTP
+    environment:
+      # Mysql/Maria connection parameters:
+      DB_MYSQL_HOST: "db"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "yj9TxsLXqkw1xrj0dRaYY80gg1"
+      DB_MYSQL_NAME: "npm"
+      # Uncomment this if IPv6 is not enabled on your host
+      # DISABLE_IPV6: 'true'
+    volumes:
+      - /var/docker-data/ext-www/npm/data:/data
+      - /var/docker-data/ext-www/npm/letsencrypt:/etc/letsencrypt
+    networks:
+      containers:
+        ipv4_address: 172.31.0.11
+    depends_on:
+      - db
+
+  nextcloud:
+    image: 'fsismo/ubuntu-24.04-apache-php:latest'
+    restart: unless-stopped
+    volumes:
+      - /var/docker-data/ext-www/nextcloud:/var/www/html
+      - ./nextcloud/etc/apache2/sites-enabled/000-default.conf:/etc/apache2/sites-enabled/000-default.conf
+      - ./nextcloud/etc/cron.d/nextcloud:/etc/cron.d/nextcloud
+    networks:
+      containers:
+        ipv4_address: 172.31.0.20
+    depends_on:
+      - db
+      - nextcloud-redis
+
+  nextcloud-redis:
+    image: redis:latest
+    restart: always
+    #ports:
+      #- "6379:6379"
+    volumes:
+      - /var/docker-data/ext-www/nextcloud-redis/:/root/redis
+      #- /path/to/local/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      #- REDIS_PASSWORD=my-password
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+    networks:
+      containers:
+        ipv4_address: 172.31.0.21
+
+  wordpress:
+    image: 'fsismo/ubuntu-24.04-apache-php:latest'
+    restart: unless-stopped
+    volumes:
+      - /var/docker-data/ext-www/wordpress:/var/www/html
+    networks:
+      containers:
+        ipv4_address: 172.31.0.22
+    depends_on:
+      - db
+      - wordpress-redis
+
+  wordpress-redis:
+    image: redis:latest
+    restart: always
+    #ports:
+      #- "6379:6379"
+    volumes:
+      - /var/docker-data/ext-www/wordpress-redis:/root/redis
+      #- /path/to/local/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      #- REDIS_PASSWORD=my-password
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+    networks:
+      containers:
+        ipv4_address: 172.31.0.23
+
+  smtp:
+    #image: 'fsismo/ubuntu-24.04-postfix-smtp-relay:latest'
+    image: 'fsismo/ubuntu-24.04-postfix-smtp:latest'
+    restart: unless-stopped
+    dns:
+      - 10.0.0.42
+      - 10.0.0.43
+      - 10.0.0.44
+    ports:
+      - '25:25'
+    environment:
+      SMTP_NETWORK: ${SMTP_NETWORK}
+      SMTP_HOSTNAME: ${SMTP_HOSTNAME} 
+      SMTP_EMAIL: ${SMTP_EMAIL}
+      SMTP_EMAIL_PASSWORD: ${SMTP_EMAIL_PASSWORD}
+      SMTP_DOMAIN: ${SMTP_DOMAIN}
+      SMTP_SRV: ${SMTP_SRV}
+      SMTP_PORT: ${SMTP_PORT}
+    volumes:
+      - /var/docker-data/ext-www/npm/letsencrypt/live/npm-7/fullchain.pem:/etc/ssl/certs/ssl-cert-snakeoil.pem
+      - /var/docker-data/ext-www/npm/letsencrypt/live/npm-7/privkey.pem:/etc/ssl/private/ssl-cert-snakeoil.key
+    networks:
+      containers:
+        ipv4_address: 172.31.0.254

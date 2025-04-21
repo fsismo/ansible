@@ -22,7 +22,7 @@
 
   - name: Copiar syncthing.service
     template:
-      src: /mnt/storage/ansible/syncthing/etc/systemd/system/syncthing.service
+      src: /mnt/storage/ansible/ubu2404/syncthing/etc/systemd/system/syncthing.service
       dest: /etc/systemd/system/syncthing.service
       owner: root
       group: root
