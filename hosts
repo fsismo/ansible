@@ -18,7 +18,7 @@
 #	rbpi4006.sismonda.local
 #	rbpi-sandbox.sismonda.local	
 [rbpi5]
-	rbpi5001.sismonda.local
+#	rbpi5001.sismonda.local
 	rbpi5002.sismonda.local
 
 [dns]

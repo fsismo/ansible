@@ -2,18 +2,15 @@
 # Provee vpn y DNS con filtro de publicidad.
 # Sincroniza un lan.list para tener dns interno.
 ---
-- hosts: rbpi5002 
+- hosts: rbpi5002.sismonda.local
   become: yes
 
   tasks:
   - name: Include Docker Task
     ansible.builtin.include_tasks: "../modules/docker.yml"
 
-  - name: Instalar nfs-common y rysnc.
-    package:
-      name:
-       - nfs-common
-       - rsync
+  - name: Include NFS Task
+    ansible.builtin.include_tasks: "../modules/nfs.yml"
 
   - name: Crear directorio /opt/utils
     file:
@@ -60,18 +57,20 @@
       path: /var/docker-data/ext-www/wordpress-redis
       state: directory
 
-  - name: Crear directorio /opt/utils
+  - name: Crear directorio /opt/docker/ext-www
     file:
-      path: /opt/utils
+      path: /opt/docker/ext-www
       state: directory
 
-  - name: Mount up device by label
-    mount:
-      path: /mnt/storage
-      src: 10.0.0.9:/storage
-      fstype: nfs
-      opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
-      state: mounted
+  - name: Copy Nextcloud site config and cron files
+    ansible.builtin.copy:
+      src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/nextcloud/
+      dest: /opt/docker/ext-www/nextcloud/
+
+  - name: Copy sql create database files
+    ansible.builtin.copy:
+      src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/sql/
+      dest: /opt/docker/ext-www/sql/
 
   - name: Copiar compose.yml
     template:
@@ -82,10 +81,28 @@
       mode: 0640
       backup: yes
 
-  - name: Copiar phwrgrd.service
+  - name: Copiar compose .env
     template:
-      src: /mnt/storage/ansible/ubu2404/phwrgrd/etc/systemd/system/ext-service.service
-      dest: /etc/systemd/system/ext-service.service
+      src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/.env
+      dest: /opt/docker/ext-www/.env
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar nextcloud.txt
+    template:
+      src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/nextcloud.txt
+      dest: /opt/docker/ext-www/nextcloud.txt
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar ext-www.service
+    template:
+      src: /mnt/storage/ansible/ubu2404/ext-www/etc/systemd/system/ext-www.service
+      dest: /etc/systemd/system/ext-www.service
       owner: root
       group: root
       mode: 0644
@@ -98,4 +115,4 @@
       daemon_reload: yes
       enabled: yes
 
-      
+

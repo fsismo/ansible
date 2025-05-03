@@ -1,0 +1,2 @@
+#m	h	d	m	wd	usr		cmd
+*/5	*	*	*	*	www-data	/usr/bin/php /var/www/html/cron.php
