@@ -1,0 +1,37 @@
+---
+- hosts: alphaprime.sismonda.local
+  become: yes
+
+  tasks:
+  - name: Include Nerdctl Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio /opt/docker/ollama
+    file:
+      path: /opt/docker/ollama
+      state: directory
+
+  - name: Copiar Compose
+    template:
+      src: /mnt/storage/ansible/ubu2404/ollama/opt/docker/ollama/compose.yml
+      dest: /opt/docker/ollama/compose.yml
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar ollama.service
+    template:
+      src: /mnt/storage/ansible/ubu2404/ollama/etc/systemd/system/ollama.service
+      dest: /etc/systemd/system/ollama.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+      
+  - name: Configurar ejecución de ollama.service.
+    systemd:
+      name: ollama.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
