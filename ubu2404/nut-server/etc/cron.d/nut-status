@@ -1,0 +1,5 @@
+MAILTO="" 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# Cron setting to run the /opt/nut/check-status.sh every 15 minutes 
+#m	    h	d	m	wd	usr	cmd
+*/15	*	*	*	*	root	/opt/nut/check-status.sh
