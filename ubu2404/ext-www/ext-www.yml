@@ -81,6 +81,16 @@
       mode: 0640
       backup: yes
 
+  - name: Copiar do.sh
+    template:
+      src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/do.sh
+      dest: /opt/docker/ext-www/do.sh
+      owner: root
+      group: root
+      mode: 0750
+      backup: yes
+
+
   - name: Copiar compose .env
     template:
       src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/.env
