@@ -31,13 +31,9 @@ for param in "$@"; do
             check_docker_compose_file
 
             # Pull the latest images and restart containers with a 2-second wait time
-            echo "Pulling the latest images..."
+            echo "Upgrading the dockers..."
             docker compose pull
-            echo "Stopping containers..."
-            docker compose down
-            sleep 2
-            echo "Starting containers..."
-            docker compose up -d
+            docker compose up -d --force-recreate
             ;;
         ncld-upgrade)
             # Check for Docker Compose and docker-compose.yml

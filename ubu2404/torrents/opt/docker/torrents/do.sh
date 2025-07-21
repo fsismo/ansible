@@ -28,11 +28,9 @@ restart_app() {
 }
 
 upgrade_app() {
-    stop_app
-    sleep 2  # Wait for 2 seconds before upgrade
+    echo "Upgrading the dockers..."
     docker compose pull
-    sleep 2  # Wait for 2 seconds before starting again
-    start_app
+    docker compose up -d --force-recreate
 }
 
 # Main script logic
