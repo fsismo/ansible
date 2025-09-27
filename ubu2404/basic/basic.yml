@@ -1,0 +1,26 @@
+---
+- hosts: alphaprime-dev.sismonda.local 
+  become: yes 
+
+  tasks:
+  - name: Include NFS
+    ansible.builtin.include_tasks: "../modules/nfs.yml"
+
+  - name: Instalar aplicaciones básicas, mi toolbox
+    package:
+      name: 
+       - aria2
+       - byobu
+       - elinks
+       - ethtool
+       - exfat-fuse
+       - fail2ban
+       - iperf3
+       - iftop
+       - mc
+       - molly-guard
+       - net-tools
+       - rsync
+       - vim
+       - wget
+      state: latest
