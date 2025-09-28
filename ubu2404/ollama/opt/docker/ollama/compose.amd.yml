@@ -1,0 +1,40 @@
+---
+services:
+  ollama:
+    #image: ollama/ollama
+    image: ollama/ollama:rocm
+    container_name: ollama
+    hostname: alphaprime
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    environment:
+      - OLLAMA_FLASH_ATTENTION=true
+      - OLLAMA_KV_CACHE_TYPE=q8_0
+      - HSA_OVERRIDE_GFX_VERSION=11.0.0
+      - OLLAMA_DEBUG=0
+    volumes:
+      - ./ollama:/root/.ollama      #llm storage
+    ports:
+      - 11434:11434 # Web UI
+    restart: unless-stopped
+  open-webui:
+    build:
+      context: .
+      args:
+        OLLAMA_BASE_URL: '/ollama'
+      dockerfile: Dockerfile
+    image: ghcr.io/open-webui/open-webui
+    container_name: open-webui
+    volumes:
+      - ./open-webui:/app/backend/data
+    depends_on:
+      - ollama
+    ports:
+      - 3000:8080
+    environment:
+      - 'OLLAMA_BASE_URL=http://ollama:11434'
+      - 'WEBUI_SECRET_KEY='
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
