@@ -20,6 +20,15 @@
       mode: 0640
       backup: yes
 
+  - name: Copiar do.sh
+    template:
+      src: /mnt/storage/ansible/ubu2404/ollama/opt/docker/ollama/do.sh
+      dest: /opt/docker/ollama/do.sh
+      owner: root
+      group: root
+      mode: 0740
+      backup: yes
+
   - name: Copiar ollama.service
     template:
       src: /mnt/storage/ansible/ubu2404/ollama/etc/systemd/system/ollama.service

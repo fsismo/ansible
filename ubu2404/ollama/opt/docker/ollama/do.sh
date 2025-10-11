@@ -23,10 +23,10 @@ case $1 in
     "update")
         echo "Updating Ollama models..."
         for model in $(docker exec -it ollama ollama list | sed '1d' | awk '{print $1}')
-        do
-            echo  "Updating model: $model"
+	do
+            echo "Updating model: $model"
             docker exec -it ollama ollama pull $model
-        done
+        done 
         ;;
     "upgrade")
         echo "Upgrading the dockers..."
@@ -38,5 +38,3 @@ case $1 in
         exit 1
         ;;
 esac
-
-
