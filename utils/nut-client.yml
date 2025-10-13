@@ -1,5 +1,5 @@
 ---
-- hosts: all:!alphaprime.sismonda.local 
+- hosts: all:!rbpi4003.sismonda.local 
   become: yes 
   handlers:
    - name: restart_service
