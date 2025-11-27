@@ -1,0 +1,46 @@
+---
+- hosts: alphaprime.sismonda.local
+  become: yes
+
+  tasks:
+  - name: Include Docker / Docker Compose Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio /opt/docker/plex
+    file:
+      path: /opt/docker/plex
+      state: directory
+
+  - name: Copiar Compose
+    template:
+      src: /mnt/storage/ansible/ubu2404/plex/opt/docker/plex/compose.yml
+      dest: /opt/docker/plex/compose.yml
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar do.sh
+    template:
+      src: /mnt/storage/ansible/ubu2404/plex/opt/docker/plex/do.sh
+      dest: /opt/docker/plex/do.sh
+      owner: root
+      group: root
+      mode: 0740
+      backup: yes
+
+  - name: Copiar plex.service
+    template:
+      src: /mnt/storage/ansible/ubu2404/plex/etc/systemd/system/plex.service
+      dest: /etc/systemd/system/plex.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+      
+  - name: Configurar ejecución de plex.service.
+    systemd:
+      name: plex.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
