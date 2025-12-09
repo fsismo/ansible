@@ -132,7 +132,7 @@ function upgrade_dockers() {
 function show_usage() {
     echo -e "Usage: $0 [COMMAND]
 Available commands:
-  model_list       List available Ollama models
+  models_list       List available Ollama models
   model_pull MODEL Pull a new model from Ollama repository
   model_rm         Remove a model from Ollama
   models_update    Update all installed Ollama models
