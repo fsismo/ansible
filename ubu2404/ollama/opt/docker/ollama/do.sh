@@ -30,7 +30,7 @@ function model_pull() {
 
 # Function to remove a model from Ollama
 function model_rm() {
-    local model_list=$(docker exec -it ollama ollama list)
+    local model_list=$(docker exec ollama ollama list)
     
     # Check if no models are installed
     if [ $? -ne 0 ]; then
@@ -40,10 +40,7 @@ function model_rm() {
 
     # Display the model list with numbers
     echo -e "\n${BLUE}Available Models:${NC}"
-    docker exec -it ollama ollama list | awk 'NR>1 {print $1 " (" $2 ")"}' | \
-        while read -r line; do
-            echo "$(echo "$line" | wc -l | tail -n 1) $line"
-        done
+    docker exec ollama ollama list | awk 'NR>1 {print NR-1 " " $1 " (" $2 ")"}'
 
     # Prompt the user to enter the number of the model they want to remove
     read -p "Enter the number of the model you want to remove: " model_number
@@ -53,16 +50,20 @@ function model_rm() {
         return 1
     fi
 
-    # Calculate the index of the selected model
-    local index=$((model_number - 1))
-    local model_name=$(docker exec -it ollama ollama list | awk 'NR>1 {print $1}' | tail -n "$index + 1" | head -n 1)
+    # Get the model name based on the selected number
+    local model_name=$(docker exec ollama ollama list | awk -v n="$model_number" 'NR==n+1 {print $1}')
+
+    if [ -z "$model_name" ]; then
+        echo -e "${RED}Error: Invalid model number selected.${NC}"
+        return 1
+    fi
 
     # Confirm the removal with the user
     read -p "Are you sure you want to remove '$model_name'? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" || "$confirmation" == "Y" ]]; then
         echo -e "${BLUE}Removing model: $model_name...${NC}"
-        docker exec -it ollama ollama rm "$model_name" && \
+        docker exec ollama ollama rm "$model_name" && \
             echo -e "${GREEN}Model '$model_name' removed successfully.${NC}" || \
             echo -e "${RED}Error removing model '$model_name'.${NC}"
     else
