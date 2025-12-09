@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 # Function to list available Ollama models
 function model_list() {
     echo -e "${BLUE}Available Models:${NC}"
-    docker exec -it ollama ollama list
+    docker exec ollama ollama list
 }
 
 # Function to pull a new model from Ollama repository
