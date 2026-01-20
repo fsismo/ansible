@@ -1,5 +1,5 @@
 ---
-- hosts: rbpi4003.sismonda.local, rbpi4004.sismonda.local 
+- hosts: rbpi5001.sismonda.local
   become: yes
 
   tasks:
