@@ -1,5 +1,4 @@
 ---
-version: "2.1"
 services:
 
   flaresolverr:
@@ -23,7 +22,7 @@ services:
       - PGID=1000
       - TZ=America/Argentina/Buenos_Aires
     volumes:
-      - ./prowlarr/config:/config
+      - /var/docker-data/torrents/prowlarr/config:/config
     ports:
       - 9696:9696
     restart: unless-stopped
@@ -36,7 +35,7 @@ services:
       - PGID=1000
       - TZ=America/Argentina/Buenos_Aires
     volumes:
-      - ./radarr/config:/config
+      - /var/docker-data/torrents/radarr/config:/config
       - /mnt/storage/Plex/Videos/Movies:/movies #optional
       - /mnt/storage/Downloads/transmission:/downloads #optional
     ports:
@@ -51,7 +50,7 @@ services:
       - PGID=1000
       - TZ=America/Argentina/Buenos_Aires
     volumes:
-      - ./sonarr/config:/config
+      - /var/docker-data/torrents/sonarr/config:/config
       - /mnt/storage/Plex/Videos/TV Shows:/tv #optional
       - /mnt/storage/Downloads/transmission:/downloads #optional
     ports:
@@ -71,7 +70,7 @@ services:
 #      - WHITELIST=iplist #optional
 #      - HOST_WHITELIST=dnsnane list #optional
     volumes:
-      - ./transmission/config:/config
+      - /var/docker-data/torrents/transmission/config:/config
       - /mnt/storage/Downloads/transmission:/downloads
       - /mnt/storage/Downloads/transmission/watch:/watch
     ports:

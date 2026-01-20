@@ -1,6 +1,6 @@
 # Despliega un compose.yml con prowlarr, radarr, sonarr, transmission
 ---
-- hosts: rbpi4003.sismonda.local
+- hosts: rbpi5001.sismonda.local
   become: yes
 
   tasks:
