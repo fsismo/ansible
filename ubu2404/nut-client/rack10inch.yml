@@ -1,0 +1,53 @@
+---
+- hosts: rack10inch:!rbpi4001.sismonda.local 
+  become: yes 
+  handlers:
+   - name: restart_service
+     service:
+       name: nut-client
+       state: restarted
+
+  tasks:
+  - name: Instalar Nut.
+    package:
+      name: 
+       - nut 
+      state: latest
+
+  - name: Copiar nut.conf.
+    template:
+      src: /mnt/storage/ansible/ubu2404/nut-client/rack10inch/nut.conf 
+      dest: /etc/nut/nut.conf
+      owner: root
+      group: nut
+      mode: 0640
+      backup: yes
+    notify:
+      - restart_service
+
+  - name: Copiar upsmon.conf.
+    template:
+      src: /mnt/storage/ansible/ubu2404/nut-client/rack10inch/upsmon.conf 
+      dest: /etc/nut/upsmon.conf
+      owner: root
+      group: nut
+      mode: 0640
+    notify:
+      - restart_service
+
+  - name: Copiar upssched.conf.
+    template:
+      src: /mnt/storage/ansible/ubu2404/nut-client/rack10inch/upssched.conf 
+      dest: /etc/nut/upssched.conf
+      owner: root
+      group: nut
+      mode: 0640
+    notify:
+      - restart_service
+
+  - name: Verificar ejecución de Nut.
+    systemd: 
+      name: nut-client 
+      state: started
+      daemon_reload: yes
+      enabled: yes

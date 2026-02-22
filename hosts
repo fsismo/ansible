@@ -4,6 +4,12 @@
 #	blackmamba.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 #	sandbox.sismonda.local		ansible_python_interpreter=/usr/bin/python3
 
+[rack10inch]
+	rbpi4001.sismonda.local		ansible_python_interpreter=/usr/bin/python3
+	rbpi4002.sismonda.local		ansible_python_interpreter=/usr/bin/python3
+	rbpi5001.sismonda.local		ansible_python_interpreter=/usr/bin/python3
+	rbpi5002.sismonda.local		ansible_python_interpreter=/usr/bin/python3
+
 [rbpi3]
 	rbpi3-001.sismonda.local	ansible_connection=local	ansible_python_interpreter=/usr/bin/python3
 #	rbpi3-002.sismonda.local
@@ -27,9 +33,8 @@
 #        rbpiz-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 
 [phwrgrd]
+	rbpi4001.sismonda.local
 	rbpi4002.sismonda.local
-	rbpi4003.sismonda.local
-	rbpi4004.sismonda.local
 	rbpi5001.sismonda.local
 
 [always]
