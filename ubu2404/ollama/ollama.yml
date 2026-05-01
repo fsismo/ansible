@@ -29,6 +29,25 @@
       mode: 0740
       backup: yes
 
+  - name: Verificar si existe .env
+    stat:
+      path: /opt/docker/ollama/.env
+    register: ollama_env_file
+
+  - name: Generar WEBUI_SECRET_KEY
+    shell: openssl rand -hex 32
+    register: webui_secret_key
+    when: not ollama_env_file.stat.exists
+
+  - name: Crear .env con WEBUI_SECRET_KEY
+    copy:
+      dest: /opt/docker/ollama/.env
+      content: "WEBUI_SECRET_KEY={{ webui_secret_key.stdout }}\n"
+      owner: root
+      group: root
+      mode: 0640
+    when: not ollama_env_file.stat.exists
+
   - name: Copiar ollama.service
     template:
       src: /mnt/storage/ansible/ubu2404/ollama/etc/systemd/system/ollama.service
