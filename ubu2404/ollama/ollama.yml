@@ -1,5 +1,5 @@
 ---
-- hosts: alphaprime.sismonda.local,alphaprime-dev.sismonda.local
+- hosts: alphaprime.sismonda.local
   become: yes
 
   tasks:
