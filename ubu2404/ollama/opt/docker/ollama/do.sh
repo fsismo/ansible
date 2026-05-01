@@ -71,6 +71,60 @@ function model_rm() {
     fi
 }
 
+# Prepare models for offline use with OpenCode (sets num_ctx and saves with -32k suffix)
+function models_opencode() {
+    local CTX=32768
+
+    # List models excluding ones already prepared (-32k suffix)
+    local models
+    models=$(docker exec ollama ollama list 2>/dev/null | sed '1d' | awk '{print $1}' | grep -v "\-32k$")
+
+    if [ -z "$models" ]; then
+        echo -e "${RED}No models available to prepare.${NC}"
+        return 1
+    fi
+
+    echo -e "\n${BLUE}Available models:${NC}"
+    echo "$models" | awk '{print NR"  "$1}'
+
+    read -p "Enter model number to prepare (or 'all'): " selection
+
+    local selected
+    if [ "$selection" = "all" ]; then
+        selected="$models"
+    elif [[ "$selection" =~ ^[0-9]+$ ]]; then
+        selected=$(echo "$models" | sed -n "${selection}p")
+        if [ -z "$selected" ]; then
+            echo -e "${RED}Invalid selection.${NC}"
+            return 1
+        fi
+    else
+        echo -e "${RED}Invalid input.${NC}"
+        return 1
+    fi
+
+    local ok=0 fail=0
+    for model in $selected; do
+        # qwen3:14b → qwen3:14b-32k  /  mistral → mistral:latest-32k
+        local base tag saved
+        if [[ "$model" == *":"* ]]; then
+            base="${model%%:*}"
+            tag="${model##*:}"
+            saved="${base}:${tag}-32k"
+        else
+            saved="${model}:latest-32k"
+        fi
+
+        echo -e "\n${BLUE}Preparing ${model} → ${saved} (num_ctx=${CTX})${NC}"
+        printf "/set parameter num_ctx %d\n/save %s\n/bye\n" "$CTX" "$saved" | \
+            docker exec -i ollama ollama run "$model" > /dev/null && \
+            echo -e "${GREEN}Saved as ${saved}${NC}" && ((ok++)) || \
+            { echo -e "${RED}Error preparing ${model}${NC}"; ((fail++)); }
+    done
+
+    echo -e "\nDone — ${GREEN}prepared: $ok${NC}  ${RED}failed: $fail${NC}"
+}
+
 # Function to upgrade models
 function models_update() {
     echo -e "${BLUE}Updating Ollama models...${NC}"
@@ -132,10 +186,11 @@ function upgrade_dockers() {
 function show_usage() {
     echo -e "Usage: $0 [COMMAND]
 Available commands:
-  models_list       List available Ollama models
-  model_pull MODEL Pull a new model from Ollama repository
+  models_list      List available Ollama models
+  model_pull       Pull a new model from Ollama repository
   model_rm         Remove a model from Ollama
   models_update    Update all installed Ollama models
+  models_opencode  Prepare models for offline use with OpenCode (num_ctx=32768, saves with -32k suffix)
   start            Start Docker services
   stop             Stop Docker services
   upgrade          Upgrade Docker services
@@ -152,6 +207,8 @@ case $1 in
         model_list ;;
     "models_update")
         models_update ;;
+    "models_opencode")
+        models_opencode ;;
     "start")
         start_docker ;;
     "stop")
