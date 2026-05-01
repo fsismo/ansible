@@ -116,10 +116,14 @@ function models_opencode() {
         fi
 
         echo -e "\n${BLUE}Preparing ${model} → ${saved} (num_ctx=${CTX})${NC}"
-        printf "/set parameter num_ctx %d\n/save %s\n/bye\n" "$CTX" "$saved" | \
-            docker exec -i ollama ollama run "$model" > /dev/null && \
-            echo -e "${GREEN}Saved as ${saved}${NC}" && ((ok++)) || \
-            { echo -e "${RED}Error preparing ${model}${NC}"; ((fail++)); }
+        if printf "/set parameter num_ctx %d\n/save %s\n/bye\n" "$CTX" "$saved" | \
+                docker exec -i ollama ollama run "$model" > /dev/null; then
+            echo -e "${GREEN}Saved as ${saved}${NC}"
+            ((++ok))
+        else
+            echo -e "${RED}Error preparing ${model}${NC}"
+            ((++fail))
+        fi
     done
 
     echo -e "\nDone — ${GREEN}prepared: $ok${NC}  ${RED}failed: $fail${NC}"
