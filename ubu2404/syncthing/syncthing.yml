@@ -20,6 +20,15 @@
       mode: 0640
       backup: yes
 
+  - name: Copiar do.sh
+    template:
+      src: /mnt/storage/ansible/ubu2404/syncthing/opt/docker/syncthing/do.sh
+      dest: /opt/docker/syncthing/do.sh
+      owner: root
+      group: root
+      mode: 0740
+      backup: yes
+
   - name: Copiar syncthing.service
     template:
       src: /mnt/storage/ansible/ubu2404/syncthing/etc/systemd/system/syncthing.service

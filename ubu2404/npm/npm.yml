@@ -20,6 +20,15 @@
       mode: 0640
       backup: yes
 
+  - name: Copiar do.sh
+    template:
+      src: /etc/ansible/ubu2404/npm/opt/docker/npm/do.sh
+      dest: /opt/docker/npm/do.sh
+      owner: root
+      group: root
+      mode: 0740
+      backup: yes
+
   - name: Copiar npm.service
     template:
       src: /etc/ansible/ubu2404/npm/etc/systemd/system/npm.service
