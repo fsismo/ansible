@@ -13,7 +13,7 @@
 
   - name: Copiar Compose
     template:
-      src: ubu2404/ollama/opt/docker/ollama/compose.yml
+      src: /mnt/storage/ansible/ubu2404/ollama/opt/docker/ollama/compose.yml
       dest: /opt/docker/ollama/compose.yml
       owner: root
       group: root
@@ -22,7 +22,7 @@
 
   - name: Copiar do.sh
     template:
-      src: ubu2404/ollama/opt/docker/ollama/do.sh
+      src: /mnt/storage/ansible/ubu2404/ollama/opt/docker/ollama/do.sh
       dest: /opt/docker/ollama/do.sh
       owner: root
       group: root
@@ -31,7 +31,7 @@
 
   - name: Copiar ollama.service
     template:
-      src: ubu2404/ollama/etc/systemd/system/ollama.service
+      src: /mnt/storage/ansible/ubu2404/ollama/etc/systemd/system/ollama.service
       dest: /etc/systemd/system/ollama.service
       owner: root
       group: root
