@@ -11,7 +11,7 @@ if ! mountpoint -q $NFS_MOUNT_POINT; then
     fi
 fi
 
-CHGPH=$(rsync -az -i --files-from=/opt/utils/pihole-sync-slave.conf /mnt/storage/pihole /opt/docker/phwrgrd/pihole/etc/pihole |grep 'f')
+CHGPH=$(rsync -az -i --files-from=/opt/utils/pihole-sync-slave.conf /mnt/storage/pihole /var/docker-data/phwrgrd/pihole/etc/pihole |grep 'f')
 
 if [ -n "$CHGDM" ] || [ -n "$CHGPH" ]; then
 	echo "restart dns"

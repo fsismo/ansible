@@ -27,13 +27,17 @@
 
   - name: Crear directorio /opt/docker/phwrgrd
     file:
-      path: /opt/docker/phwrgrd/pihole/etc/dnsmasq.d
+      path: /opt/docker/phwrgrd
       state: directory
 
-  - name: Crear directorio /opt/utils
+  - name: Crear directorios de storage persistente
     file:
-      path: /opt/utils
+      path: "{{ item }}"
       state: directory
+    loop:
+      - /var/docker-data/phwrgrd/wireguard/config
+      - /var/docker-data/phwrgrd/pihole/etc/pihole
+      - /var/docker-data/phwrgrd/pihole/etc/dnsmasq.d
 
   - name: Mount up device by label
     mount:
@@ -45,8 +49,8 @@
 
   - name: Copiar compose.yml
     template:
-      src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/docker-compose.yml
-      dest: /opt/docker/phwrgrd/docker-compose.yml
+      src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/compose.yml
+      dest: /opt/docker/phwrgrd/compose.yml
       owner: root
       group: root
       mode: 0640
@@ -109,7 +113,7 @@
   - name: Copiar dnsmasq lan definion file
     template:
       src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
-      dest: /opt/docker/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
+      dest: /var/docker-data/phwrgrd/pihole/etc/dnsmasq.d/02-lan.conf
       owner: root
       group: root
       mode: 0644

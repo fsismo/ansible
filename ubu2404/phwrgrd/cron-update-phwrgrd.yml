@@ -1,0 +1,33 @@
+# Configura un cron job en localhost para ejecutar update-phwrgrd.yml
+# los domingos a las 23:00 y registrar la salida en un log.
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  vars:
+    log_file: /var/log/ansible-update-phwrgrd.log
+    cron_file: /etc/cron.d/update-phwrgrd
+    playbook_cmd: >-
+      ansible-playbook -i /mnt/storage/ansible/hosts
+      /mnt/storage/ansible/ubu2404/phwrgrd/update-phwrgrd.yml
+
+  tasks:
+
+  - name: Crear archivo de log
+    file:
+      path: "{{ log_file }}"
+      state: touch
+      owner: ansible
+      group: ansible
+      mode: 0640
+
+  - name: Configurar cron job semanal (domingos 23:00)
+    copy:
+      dest: "{{ cron_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      content: |
+        # Ejecuta update-phwrgrd.yml cada domingo a las 23:00
+        0 23 * * 0 ansible {{ playbook_cmd }} >> {{ log_file }} 2>&1

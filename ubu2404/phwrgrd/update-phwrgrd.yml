@@ -8,7 +8,8 @@
   serial: 1
 
   vars:
-    compose_path: /opt/docker/phwrgrd/docker-compose.yml
+    compose_path: /opt/docker/phwrgrd/compose.yml
+    log_file: /var/log/ansible-update-phwrgrd.log
     dns_checks:
       - { host: "printer.sismonda.local",  expected_ip: "10.0.0.80" }
       - { host: "www.sismonda.com.ar",      expected_ip: "10.0.0.52" }
@@ -17,15 +18,27 @@
 
   - block:
 
+    - name: Registrar versiones previas al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Versiones previas ===" >> {{ log_file }}
+        docker inspect --format='  {{.Name}}: {{.Config.Image}} [{{.Image}}]' wireguard pihole >> {{ log_file }} 2>/dev/null || true
+      changed_when: false
+
     - name: Copiar docker-compose.yml actualizado
       template:
-        src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/docker-compose.yml
+        src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/compose.yml
         dest: "{{ compose_path }}"
         owner: root
         group: root
         mode: 0640
         backup: yes
       register: compose_copy
+
+    - name: Etiquetar imágenes actuales como rollback
+      shell: |
+        docker tag $(docker inspect --format='{{.Image}}' wireguard) lscr.io/linuxserver/wireguard:rollback
+        docker tag $(docker inspect --format='{{.Image}}' pihole) pihole/pihole:rollback
+      changed_when: false
 
     - name: Pull de las últimas imágenes
       community.docker.docker_compose_v2_pull:
@@ -73,6 +86,11 @@
         dest: "{{ compose_path }}"
         remote_src: yes
       when: compose_copy.backup_file is defined
+
+    - name: "[ROLLBACK] Restaurar imágenes previas"
+      shell: |
+        docker tag lscr.io/linuxserver/wireguard:rollback lscr.io/linuxserver/wireguard:latest
+        docker tag pihole/pihole:rollback pihole/pihole:latest
 
     - name: "[ROLLBACK] Recrear contenedores con la versión anterior"
       community.docker.docker_compose_v2:

@@ -1,7 +1,7 @@
 #Fork from the PeladoNerd's yaml file https://github.com/pablokbs/peladonerd/tree/master/varios/12
 services:
   wireguard:
-    image: linuxserver/wireguard
+    image: lscr.io/linuxserver/wireguard:latest
     container_name: wireguard
     cap_add:
       - NET_ADMIN
@@ -16,7 +16,7 @@ services:
       - PEERDNS=auto #optional
       - INTERNAL_SUBNET=10.13.13.0 #optional
     volumes:
-      - /opt/docker/phwrgrd/wireguard/config:/config
+      - /var/docker-data/phwrgrd/wireguard/config:/config
       - /lib/modules:/lib/modules
       - /usr/src:/usr/src
     ports:
@@ -41,12 +41,12 @@ services:
     environment:
       TZ: 'America/Argentina/Buenos_Aires'
       FTLCONF_misc_etc_dnsmasq_d: 'true'
-      FTLCONF_webserver_api_password: 'S3cr3t0'
+      FTLCONF_webserver_api_password: ${FTLCONF_webserver_api_password}
       FTLCONF_dns_listeningMode: 'ALL'
       FTLCONF_dns_upstreams: '8.8.8.8;8.8.4.4'
     volumes:
-      - '/opt/docker/phwrgrd/pihole/etc/pihole/:/etc/pihole/'
-      - '/opt/docker/phwrgrd/pihole/etc/dnsmasq.d/:/etc/dnsmasq.d/'
+      - '/var/docker-data/phwrgrd/pihole/etc/pihole/:/etc/pihole/'
+      - '/var/docker-data/phwrgrd/pihole/etc/dnsmasq.d/:/etc/dnsmasq.d/'
     # Recommended but not required (DHCP needs NET_ADMIN)
     #cap_add:
     #  - NET_ADMIN
