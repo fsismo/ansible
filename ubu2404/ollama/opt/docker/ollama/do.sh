@@ -115,19 +115,14 @@ function models_opencode() {
             saved="${model}:latest-32k"
         fi
 
-        local cmds
-        cmds=$(printf "/set parameter num_ctx %d\n/save %s\n/bye\n" "$CTX" "$saved")
-
         echo -e "\n${BLUE}Preparing ${model} → ${saved} (num_ctx=${CTX})${NC}"
-        echo -e "${YELLOW}Commands:${NC}"
-        echo "$cmds"
-        echo -e "${YELLOW}Output:${NC}"
 
-        if echo "$cmds" | docker exec -i ollama ollama run "$model"; then
+        if printf "FROM %s\nPARAMETER num_ctx %d\n" "$model" "$CTX" | \
+                docker exec -i ollama ollama create "$saved" -f -; then
             echo -e "${GREEN}Saved as ${saved}${NC}"
             ((++ok))
         else
-            echo -e "${RED}Error preparing ${model} (exit code: $?)${NC}"
+            echo -e "${RED}Error preparing ${model}${NC}"
             ((++fail))
         fi
     done
