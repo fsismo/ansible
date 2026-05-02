@@ -117,8 +117,9 @@ function models_opencode() {
 
         echo -e "\n${BLUE}Preparing ${model} → ${saved} (num_ctx=${CTX})${NC}"
 
+        local modelfile="/tmp/Modelfile_opencode_$$"
         if printf "FROM %s\nPARAMETER num_ctx %d\n" "$model" "$CTX" | \
-                docker exec -i ollama ollama create "$saved" -f -; then
+                docker exec -i ollama bash -c "cat > ${modelfile} && ollama create '${saved}' -f ${modelfile}; rm -f ${modelfile}"; then
             echo -e "${GREEN}Saved as ${saved}${NC}"
             ((++ok))
         else
