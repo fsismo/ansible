@@ -21,10 +21,10 @@
     - name: Registrar versiones previas al update
       shell: |
         echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Versiones previas ===" >> {{ log_file }}
-        docker inspect --format='  {{.Name}}: {{.Config.Image}} [{{.Image}}]' wireguard pihole >> {{ log_file }} 2>/dev/null || true
+        docker inspect --format='  {% raw %}{{.Name}}: {{.Config.Image}} [{{.Image}}]{% endraw %}' wireguard pihole >> {{ log_file }} 2>/dev/null || true
       changed_when: false
 
-    - name: Copiar docker-compose.yml actualizado
+    - name: Copiar compose.yml actualizado
       template:
         src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/compose.yml
         dest: "{{ compose_path }}"
@@ -36,9 +36,10 @@
 
     - name: Etiquetar imágenes actuales como rollback
       shell: |
-        docker tag $(docker inspect --format='{{.Image}}' wireguard) lscr.io/linuxserver/wireguard:rollback
-        docker tag $(docker inspect --format='{{.Image}}' pihole) pihole/pihole:rollback
+        docker tag $(docker inspect --format='{% raw %}{{.Image}}{% endraw %}' wireguard) lscr.io/linuxserver/wireguard:rollback
+        docker tag $(docker inspect --format='{% raw %}{{.Image}}{% endraw %}' pihole) pihole/pihole:rollback
       changed_when: false
+      register: tag_rollback
 
     - name: Pull de las últimas imágenes
       community.docker.docker_compose_v2_pull:
@@ -91,6 +92,7 @@
       shell: |
         docker tag lscr.io/linuxserver/wireguard:rollback lscr.io/linuxserver/wireguard:latest
         docker tag pihole/pihole:rollback pihole/pihole:latest
+      when: tag_rollback is defined and tag_rollback.rc == 0
 
     - name: "[ROLLBACK] Recrear contenedores con la versión anterior"
       community.docker.docker_compose_v2:

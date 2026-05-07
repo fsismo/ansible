@@ -47,6 +47,11 @@
       opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
       state: mounted
 
+  - name: Eliminar docker-compose.yml legacy
+    file:
+      path: /opt/docker/phwrgrd/docker-compose.yml
+      state: absent
+
   - name: Copiar compose.yml
     template:
       src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/compose.yml
