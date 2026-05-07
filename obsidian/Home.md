@@ -23,7 +23,7 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 | [[Services/Torrents\|Torrents (Arr stack)]] | rbpi5001 | Descarga automática |
 | [[Services/Nextcloud y WordPress\|Nextcloud & WordPress]] | rbpi5002 | Cloud personal + web |
 | [[Services/SearXNG\|SearXNG]] | rbpi4001 | Metabuscador privado |
-| [[Services/UniFi\|UniFi Network App]] | rbpi4001 | Gestión de red |
+| [[Services/UniFi\|UniFi Network App]] | rbpi5001 | Gestión de red |
 | [[Services/Syncthing\|Syncthing]] | alphaprime-dev | Sincronización archivos |
 
 ### Playbooks

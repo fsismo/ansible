@@ -1,0 +1,92 @@
+- hosts: rbpi5001.sismonda.local
+  become: yes
+
+  vars:
+    una_docker_dir: /opt/docker/una
+    una_data_dir: /var/docker-data/una
+    una_service_name: una
+    una_compose_file: "{{ una_docker_dir }}/compose.yml"
+    una_do_sh_file: "{{ una_docker_dir }}/do.sh"
+    una_service_file: "/etc/systemd/system/{{ una_service_name }}.service"
+    una_mongo_user: unifi
+    una_mongo_pass: un1f1
+    una_mongo_dbname: unifi
+    una_mongo_authsource: admin
+    una_mongo_root_user: root
+    una_mongo_root_pass: example
+
+  tasks:
+  - name: Create UniFi Docker directory
+    file:
+      path: "{{ una_docker_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Create UniFi app data directory
+    file:
+      path: "{{ una_data_dir }}/app-data"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Create MongoDB data directory
+    file:
+      path: "{{ una_data_dir }}/mongo-db/data"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Copy Compose file
+    template:
+      src: opt/docker/una/compose.yml
+      dest: "{{ una_compose_file }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Create .env file
+    template:
+      src: opt/docker/una/.env.j2
+      dest: "{{ una_docker_dir }}/.env"
+      owner: root
+      group: root
+      mode: 0600
+      backup: yes
+
+  - name: Copy do.sh script
+    template:
+      src: opt/docker/una/do.sh
+      dest: "{{ una_do_sh_file }}"
+      owner: root
+      group: root
+      mode: 0740
+      backup: yes
+
+  - name: Copy MongoDB init script
+    copy:
+      src: opt/docker/una/init-mongo.sh
+      dest: "{{ una_data_dir }}/mongo-db/init-mongo.sh"
+      owner: root
+      group: root
+      mode: 0750
+
+  - name: Copy systemd service file
+    template:
+      src: etc/systemd/system/una.service
+      dest: "{{ una_service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Enable and start UniFi service
+    systemd:
+      name: "{{ una_service_name }}"
+      state: started
+      daemon_reload: yes
+      enabled: yes
