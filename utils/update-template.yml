@@ -1,20 +1,19 @@
-# Actualiza los contenedores de phwrgrd (pihole + wireguard) y valida que el DNS
-# resuelva correctamente los registros internos y externos esperados.
+# Actualiza los contenedores de {SERVICIO} y verifica que quedaron corriendo.
 # Si la verificación falla, revierte automáticamente al estado anterior.
+#
+# Uso: copiar a ubu2404/{servicio}/update-{servicio}.yml y reemplazar {SERVICIO}.
+# Agregar verificaciones específicas del servicio después del check genérico.
 ---
-- hosts: phwrgrd
+- hosts: {SERVICIO}
   become: yes
   any_errors_fatal: true
   serial: 1
 
   vars:
-    servicio: phwrgrd
-    compose_dir: /opt/docker/phwrgrd
+    servicio: {SERVICIO}
+    compose_dir: /opt/docker/{{ servicio }}
     compose_path: "{{ compose_dir }}/compose.yml"
-    log_file: /var/log/ansible-update-phwrgrd.log
-    dns_checks:
-      - { host: "printer.sismonda.local", expected_ip: "10.0.0.80" }
-      - { host: "www.sismonda.com.ar",    expected_ip: "10.0.0.52" }
+    log_file: /var/log/ansible-update-{{ servicio }}.log
 
   tasks:
 
@@ -30,7 +29,7 @@
 
     - name: Copiar compose.yml actualizado
       template:
-        src: /mnt/storage/ansible/ubu2404/phwrgrd/opt/docker/phwrgrd/compose.yml
+        src: /mnt/storage/ansible/ubu2404/{{ servicio }}/opt/docker/{{ servicio }}/compose.yml
         dest: "{{ compose_path }}"
         owner: root
         group: root
@@ -71,31 +70,14 @@
         chdir: "{{ compose_dir }}"
       changed_when: false
 
-    - name: Esperar que el puerto TCP 53 de pihole esté disponible
-      wait_for:
-        host: "{{ ansible_default_ipv4.address }}"
-        port: 53
-        timeout: 60
-      delegate_to: localhost
-
-    - name: Consultar DNS para cada registro esperado
-      command: >
-        dig @{{ ansible_default_ipv4.address }} {{ item.host }} +short +time=3 +tries=2
-      register: dns_results
-      loop: "{{ dns_checks }}"
-      changed_when: false
-      delegate_to: localhost
-
-    - name: Validar respuestas DNS
-      assert:
-        that:
-          - item.stdout | trim == item.item.expected_ip
-        fail_msg: >
-          FALLO DNS: {{ item.item.host }} devolvió
-          '{{ item.stdout | trim }}' pero se esperaba '{{ item.item.expected_ip }}'
-        success_msg: >
-          OK: {{ item.item.host }} -> {{ item.stdout | trim }}
-      loop: "{{ dns_results.results }}"
+    # --- Verificaciones específicas del servicio (agregar aquí) ---
+    # Ejemplo: esperar un puerto TCP
+    # - name: Esperar que el puerto 8080 esté disponible
+    #   wait_for:
+    #     host: "{{ ansible_default_ipv4.address }}"
+    #     port: 8080
+    #     timeout: 60
+    #   delegate_to: localhost
 
     - name: Registrar versiones posteriores al update
       shell: |
