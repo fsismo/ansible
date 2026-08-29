@@ -1,3 +1,4 @@
 ubu2404/ext-www/opt/docker/ext-www/.env
 ubu2404/phwrgrd/opt/docker/phwrgrd/.env
+ubu2404/n8n/opt/docker/n8n/.env
 .vscode/settings.json
