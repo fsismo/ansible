@@ -13,23 +13,76 @@ services:
       - OLLAMA_FLASH_ATTENTION=true
       - OLLAMA_KV_CACHE_TYPE=q8_0
       - OLLAMA_DEBUG=0
+      - OLLAMA_NUM_CTX=65536
+      - OLLAMA_ORIGINS=chrome-extension://ekkbhfkioekacopempfeffdmflhcocnf
     volumes:
       - ./ollama:/root/.ollama
     ports:
       - 11434:11434
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ai-stack
+
+  tika:
+    image: apache/tika:latest-full
+    container_name: tika
+    restart: unless-stopped
+    networks:
+      - ai-stack
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
     volumes:
       - ./open-webui:/app/backend/data
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
+      comfyui:
+        condition: service_started
+      tika:
+        condition: service_started
     ports:
       - 3000:8080
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+      - COMFYUI_BASE_URL=http://comfyui:8188
+      - AIOHTTP_CLIENT_TIMEOUT=300
+      - ENABLE_IMAGE_GENERATION=true
+      - CORS_ALLOW_ORIGIN=*
+      - CONTENT_EXTRACTION_ENGINE=tika
+      - TIKA_SERVER_URL=http://tika:9998
+      - ENABLE_RAG_LOCAL_WEB_FETCH=true
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
+    networks:
+      - ai-stack
+
+  comfyui:
+    image: yanwk/comfyui-boot:rocm
+    container_name: comfyui
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=11.0.0
+      - ROCR_VISIBLE_DEVICES=1
+    volumes:
+      - ./comfyui:/root
+    ports:
+      - 8188:8188
+    restart: unless-stopped
+    networks:
+      - ai-stack
+
+networks:
+  ai-stack:
+    driver: bridge

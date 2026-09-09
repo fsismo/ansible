@@ -19,6 +19,7 @@
       group: root
       mode: 0640
       backup: yes
+    notify: Reiniciar ollama
 
   - name: Copiar do.sh
     template:
@@ -63,3 +64,9 @@
       state: started
       daemon_reload: yes
       enabled: yes
+
+  handlers:
+  - name: Reiniciar ollama
+    systemd:
+      name: ollama.service
+      state: restarted

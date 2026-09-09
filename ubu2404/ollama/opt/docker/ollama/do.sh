@@ -71,13 +71,14 @@ function model_rm() {
     fi
 }
 
-# Prepare models for offline use with OpenCode (sets num_ctx and saves with -32k suffix)
-function models_opencode() {
-    local CTX=32768
+# Internal: create context-sized variants of selected models
+# Usage: _prepare_ctx <CTX> <suffix>
+function _prepare_ctx() {
+    local CTX=$1
+    local SUFFIX=$2
 
-    # List models excluding ones already prepared (-32k suffix)
     local models
-    models=$(docker exec ollama ollama list 2>/dev/null | sed '1d' | awk '{print $1}' | grep -v "\-32k$")
+    models=$(docker exec ollama ollama list 2>/dev/null | sed '1d' | awk '{print $1}' | grep -v "\-${SUFFIX}$")
 
     if [ -z "$models" ]; then
         echo -e "${RED}No models available to prepare.${NC}"
@@ -105,19 +106,18 @@ function models_opencode() {
 
     local ok=0 fail=0
     for model in $selected; do
-        # qwen3:14b → qwen3:14b-32k  /  mistral → mistral:latest-32k
         local base tag saved
         if [[ "$model" == *":"* ]]; then
             base="${model%%:*}"
             tag="${model##*:}"
-            saved="${base}:${tag}-32k"
+            saved="${base}:${tag}-${SUFFIX}"
         else
-            saved="${model}:latest-32k"
+            saved="${model}:latest-${SUFFIX}"
         fi
 
         echo -e "\n${BLUE}Preparing ${model} → ${saved} (num_ctx=${CTX})${NC}"
 
-        local modelfile="/tmp/Modelfile_opencode_$$"
+        local modelfile="/tmp/Modelfile_ctx_$$"
         if printf "FROM %s\nPARAMETER num_ctx %d\n" "$model" "$CTX" | \
                 docker exec -i ollama bash -c "cat > ${modelfile} && ollama create '${saved}' -f ${modelfile}; rm -f ${modelfile}"; then
             echo -e "${GREEN}Saved as ${saved}${NC}"
@@ -131,22 +131,36 @@ function models_opencode() {
     echo -e "\nDone — ${GREEN}prepared: $ok${NC}  ${RED}failed: $fail${NC}"
 }
 
+# Prepare models for offline use with OpenCode (sets num_ctx=32768, saves with -32k suffix)
+function models_opencode() {
+    _prepare_ctx 32768 "32k"
+}
+
+# Prepare models for Hermes Agent (sets num_ctx=65536, saves with -64k suffix)
+function models_hermes() {
+    _prepare_ctx 65536 "64k"
+}
+
 # Function to upgrade models
 function models_update() {
     echo -e "${BLUE}Updating Ollama models...${NC}"
-    local updated=0
-    local failed=0
-    
-    # Get the list of installed models without TTY
-    models=$(docker exec ollama ollama list 2>/dev/null | sed '1d' | awk '{print $1}')
-    
-    if [ $? -ne 0 ]; then
+    local updated=0 failed=0 rebuilt=0 rebuild_failed=0
+
+    local all_models
+    all_models=$(docker exec ollama ollama list 2>/dev/null | sed '1d' | awk '{print $1}')
+
+    if [ -z "$all_models" ]; then
         echo -e "${RED}Error: Failed to retrieve Ollama models.${NC}"
         return 1
     fi
 
-    # Update each model
-    for model in $models; do
+    # Separate base models from custom context variants (suffix -<N>k)
+    local base_models custom_models
+    base_models=$(echo "$all_models" | grep -v '\-[0-9]\+k$')
+    custom_models=$(echo "$all_models" | grep '\-[0-9]\+k$')
+
+    # Update base models via pull
+    for model in $base_models; do
         echo -e "\n${BLUE}Updating model: $model${NC}"
         if docker exec ollama ollama pull "$model" > /dev/null; then
             ((updated++))
@@ -157,10 +171,36 @@ function models_update() {
         fi
     done
 
-    # Print summary
+    # Rebuild custom variants from their updated base model
+    for model in $custom_models; do
+        local modelfile_content base_model num_ctx
+        modelfile_content=$(docker exec ollama ollama show --modelfile "$model" 2>/dev/null)
+        base_model=$(echo "$modelfile_content" | grep '^FROM' | awk '{print $2}')
+        num_ctx=$(echo "$modelfile_content" | grep 'num_ctx' | awk '{print $3}')
+
+        if [ -z "$base_model" ] || [ -z "$num_ctx" ]; then
+            echo -e "\n${RED}Cannot determine base model for ${model}, skipping.${NC}"
+            ((rebuild_failed++))
+            continue
+        fi
+
+        echo -e "\n${BLUE}Rebuilding ${model} from ${base_model} (num_ctx=${num_ctx})${NC}"
+        local tmpfile="/tmp/Modelfile_update_$$"
+        if printf "FROM %s\nPARAMETER num_ctx %d\n" "$base_model" "$num_ctx" | \
+                docker exec -i ollama bash -c "cat > ${tmpfile} && ollama create '${model}' -f ${tmpfile}; rm -f ${tmpfile}"; then
+            echo -e "${GREEN}Rebuilt ${model}${NC}"
+            ((rebuilt++))
+        else
+            echo -e "${RED}Failed to rebuild ${model}${NC}"
+            ((rebuild_failed++))
+        fi
+    done
+
     echo -e "\nUpdate summary:
-    ${GREEN}Updated models: $updated${NC}
-    ${RED}Failed updates: $failed${NC}"
+    ${GREEN}Updated base models:     $updated${NC}
+    ${RED}Failed base updates:     $failed${NC}
+    ${GREEN}Rebuilt custom variants: $rebuilt${NC}
+    ${RED}Failed rebuilds:         $rebuild_failed${NC}"
 }
 
 # Function to start docker compose
@@ -195,8 +235,9 @@ Available commands:
   models_list      List available Ollama models
   model_pull       Pull a new model from Ollama repository
   model_rm         Remove a model from Ollama
-  models_update    Update all installed Ollama models
-  models_opencode  Prepare models for offline use with OpenCode (num_ctx=32768, saves with -32k suffix)
+  models_update    Update base models and rebuild custom context variants
+  models_opencode  Prepare models for OpenCode (num_ctx=32768, -32k suffix)
+  models_hermes    Prepare models for Hermes Agent (num_ctx=65536, -64k suffix)
   start            Start Docker services
   stop             Stop Docker services
   upgrade          Upgrade Docker services
@@ -215,6 +256,8 @@ case $1 in
         models_update ;;
     "models_opencode")
         models_opencode ;;
+    "models_hermes")
+        models_hermes ;;
     "start")
         start_docker ;;
     "stop")
