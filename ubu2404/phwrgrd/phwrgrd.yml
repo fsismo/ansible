@@ -141,21 +141,16 @@
       state: absent
     when: link.stat.islnk is defined and link.stat.islnk
 
-  - stat:
-      path: "/etc/resolv.conf"
-    register: file_resolv
-
-  - name: Si el /etc/resolv.conf no existe lo creo
+  - name: Configurar /etc/resolv.conf temporal con DNS externo antes de levantar Pi-Hole
     copy:
       dest: /etc/resolv.conf
       content: |
-        nameserver 8.8.8.8 
+        nameserver 8.8.8.8
         options edns0 trust-ad
         search .
       group: root
       owner: root
       mode: 0644
-    when: file_resolv.stat.exists == False
 
   - name: Configurar ejecución de phwrgrd.service.
     systemd:
@@ -172,7 +167,15 @@
       enabled: yes
 
   - name: Configurando /etc/resolv.conf para utilizar pihole
-    lineinfile:
-      path: /etc/resolv.conf
-      regexp: '^nameserver 8.8.8.8'
-      line: 'nameserver 127.0.0.1'
+    # Sobreescribe todo el archivo (no reemplaza una línea puntual) para
+    # que no queden nameservers viejos/ajenos de configuraciones previas
+    # del host, que retrasarían la resolución si no responden.
+    copy:
+      dest: /etc/resolv.conf
+      content: |
+        nameserver 127.0.0.1
+        options edns0 trust-ad
+        search .
+      group: root
+      owner: root
+      mode: 0644

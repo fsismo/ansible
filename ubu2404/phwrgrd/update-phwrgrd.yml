@@ -14,7 +14,6 @@
     log_file: /var/log/ansible-update-phwrgrd.log
     dns_checks:
       - { host: "printer.sismonda.local", expected_ip: "10.0.0.80" }
-      - { host: "www.sismonda.com.ar",    expected_ip: "10.0.0.52" }
 
   tasks:
 
@@ -49,19 +48,34 @@
       changed_when: false
       register: tag_rollback
 
+    - name: Pull de las últimas imágenes
+      # Se hace antes de parar el servicio: Pi-Hole todavía está arriba
+      # resolviendo DNS y el pull no depende de que el propio Pi-Hole
+      # (que provee el DNS del host) esté caído.
+      # Reintenta ante timeouts puntuales de DNS (ej. contención de red/CPU
+      # en la Raspberry Pi), sin taparlos si el fallo persiste.
+      community.docker.docker_compose_v2_pull:
+        project_src: "{{ compose_dir }}"
+      register: pull_result
+      until: pull_result is succeeded
+      retries: 3
+      delay: 10
+
+    - name: Determinar si hace falta reiniciar el servicio
+      set_fact:
+        needs_restart: "{{ compose_copy.changed or pull_result.changed }}"
+
     - name: Parar el servicio
       systemd:
         name: "{{ servicio }}.service"
         state: stopped
-
-    - name: Pull de las últimas imágenes
-      community.docker.docker_compose_v2_pull:
-        project_src: "{{ compose_dir }}"
+      when: needs_restart
 
     - name: Iniciar el servicio
       systemd:
         name: "{{ servicio }}.service"
         state: started
+      when: needs_restart
 
     - name: Verificar que todos los contenedores están running
       shell: >-
