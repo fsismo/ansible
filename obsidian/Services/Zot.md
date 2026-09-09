@@ -27,7 +27,26 @@ en una Raspberry Pi. Sirve por **HTTPS** con certificado de la CA local.
 
 | Puerto | Función |
 |---|---|
-| `5000` | API OCI / Docker Registry v2 — **HTTPS** (TLS con cert de la CA local) |
+| `5000` | API OCI / Docker Registry v2 **y** web UI — **HTTPS** (TLS con cert de la CA local) |
+
+## Web UI
+
+zot sirve su UI web (zui) en la raíz: `https://registry.sismonda.local:5000/`. Es de **solo
+lectura**: navegar repos, tags, tamaño, capas, historial. No hay gestión de usuarios ni
+configuración por UI (eso sigue en `htpasswd` + `config.json`).
+
+Habilitada vía `config.json`:
+
+```json
+"extensions": {
+  "search": { "enable": true },
+  "ui":     { "enable": true }
+}
+```
+
+`search` es requisito de `ui` (la UI consulta por GraphQL en `/v2/_zot/ext/search`).
+**Sin CVE scanning**: no se define `search.cve`, así que no descarga la base de Trivy
+(pesada para la RPi4). El acceso a la UI respeta el mismo `accessControl` que la API.
 
 ## Volúmenes y almacenamiento
 
