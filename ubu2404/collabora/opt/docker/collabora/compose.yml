@@ -1,0 +1,14 @@
+services:
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
+    ports:
+      - 9980:9980/tcp
+    environment:
+      - domain=nextcloud.sismonda.com.ar
+      - server_name=collabora.sismonda.com.ar
+      - username=admin
+      - password=${COLLABORA_PASSWORD}
+      - dictionaries=es_AR es_ES en_GB en_US
+      - TZ=America/Argentina/Buenos_Aires
+    restart: unless-stopped

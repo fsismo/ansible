@@ -1,0 +1,67 @@
+# Despliega Collabora Online y lo pone bajo gestión de systemd.
+# Requiere que /opt/docker/collabora/.env ya exista (contiene COLLABORA_PASSWORD, no se commitea).
+# Ver obsidian/Services/Collabora.md para las variables requeridas.
+---
+- hosts: alphaprime.sismonda.local
+  become: yes
+
+  vars:
+    servicio: collabora
+    compose_dir: /opt/docker/{{ servicio }}
+    compose_path: "{{ compose_dir }}/compose.yml"
+    service_file: /etc/systemd/system/{{ servicio }}.service
+
+  tasks:
+  - name: Crear directorio {{ compose_dir }}
+    file:
+      path: "{{ compose_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Verificar que existe .env
+    stat:
+      path: "{{ compose_dir }}/.env"
+    register: collabora_env_file
+
+  - name: Abortar si falta .env
+    fail:
+      msg: >
+        {{ compose_dir }}/.env no existe. Crearlo manualmente antes de correr este playbook
+        (ver obsidian/Services/Collabora.md para las variables requeridas) — no se commitea al repo.
+    when: not collabora_env_file.stat.exists
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/collabora/compose.yml
+      dest: "{{ compose_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar do.sh
+    template:
+      src: opt/docker/collabora/do.sh
+      dest: "{{ compose_dir }}/do.sh"
+      owner: root
+      group: root
+      mode: 0750
+      backup: yes
+
+  - name: Copiar collabora.service
+    template:
+      src: etc/systemd/system/collabora.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Habilitar e iniciar collabora.service
+    systemd:
+      name: "{{ servicio }}.service"
+      state: started
+      daemon_reload: yes
+      enabled: yes
