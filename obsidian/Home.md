@@ -28,7 +28,7 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 | [[Services/Collabora\|Collabora Online]] | alphaprime | Editor de documentos (Nextcloud) |
 | [[Services/HermesAgent\|Hermes Agent]] | alphaprime | Agente de IA con API OpenAI-compatible |
 | [[Services/Immich\|Immich]] | alphaprime | Backup y gestión de fotos/videos |
-| [[Services/AudioBookShelf\|AudioBookShelf]] | rbpi5001 | Servidor de audiolibros |
+| [[Services/AudioBookShelf\|AudioBookShelf]] | rbpi5002 | Servidor de audiolibros |
 | [[Services/n8n\|n8n]] | alphaprime | Automatización de workflows |
 
 ### Playbooks

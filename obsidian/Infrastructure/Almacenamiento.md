@@ -49,9 +49,11 @@ rsize=131072, wsize=131072
 | [[../Services/Plex\|Plex]] | `/mnt/storage/Plex`, `/mnt/storage/Videos` |
 | [[../Services/Torrents\|Radarr]] | `/mnt/storage/Plex/Videos/Movies` |
 | [[../Services/Torrents\|Sonarr]] | `/mnt/storage/Plex/Videos/TV Shows` |
+| [[../Services/Torrents\|Bazarr]] | `/mnt/storage/Plex/Videos/Movies`, `/mnt/storage/Plex/Videos/TV Shows` |
 | [[../Services/Torrents\|Transmission]] | `/mnt/storage/Downloads/transmission` |
 | [[../Services/Syncthing\|Syncthing]] | `/mnt/storage/Photos`, `/mnt/storage/Videos` |
 | [[../Services/Pi-Hole + WireGuard\|Pi-Hole]] | `/mnt/storage/pihole` |
+| [[../Services/AudioBookShelf\|AudioBookShelf]] | `/mnt/storage/Downloads/AudioLibros` |
 
 ## Storage local persistente (por servicio)
 
@@ -60,13 +62,15 @@ Cada servicio mantiene sus datos en el host local bajo `/var/docker-data/`:
 ```
 /var/docker-data/
 ├── npm/                    ← Nginx Proxy Manager (certs, DB)
-├── torrents/               ← Prowlarr, Radarr, Sonarr configs
+├── torrents/               ← Prowlarr, Radarr, Sonarr, Bazarr configs
 │   ├── prowlarr/
 │   ├── radarr/
 │   ├── sonarr/
+│   ├── bazarr/
 │   └── transmission/
-└── ext-www/                ← Nextcloud, WordPress, MariaDB
+└── ext-www/                ← Nextcloud, WordPress, MariaDB, AudioBookShelf
     ├── mysql/
     ├── nextcloud/
-    └── wordpress/
+    ├── wordpress/
+    └── audiobookshelf/
 ```
