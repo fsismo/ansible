@@ -1,0 +1,32 @@
+---
+services:
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes
+    hostname: hermes-srv
+    restart: unless-stopped
+    command: gateway run
+    ports:
+      - "8642:8642"
+      - "9119:9119"
+    volumes:
+      - /var/docker-data/hermes-agent:/opt/data
+    environment:
+      - HERMES_DASHBOARD=1
+      - HERMES_DASHBOARD_INSECURE=1
+      - API_SERVER_ENABLED=true
+      - API_SERVER_HOST=0.0.0.0
+      - API_SERVER_KEY=${API_SERVER_KEY}
+      - TZ=America/Argentina/Buenos_Aires
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+    networks:
+      - ai-stack
+
+networks:
+  ai-stack:
+    name: ollama_ai-stack
+    external: true
