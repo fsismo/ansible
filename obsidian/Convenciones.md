@@ -102,3 +102,9 @@ Todo servicio con contenedores Docker debe incluir un `update-{servicio}.yml` ju
 ### Por qué systemctl y no docker compose directamente
 
 `systemctl stop/start` garantiza que se ejecuten los hooks `ExecStartPre` y `ExecStop` de la unit (sincronización de datos, etc.) y que el estado de systemd quede consistente con la realidad.
+
+### Cron job de actualización
+
+Todo servicio con `update-{servicio}.yml` debe incluir también un `cron-update-{servicio}.yml` que instale el cron job en localhost. Usar `ubu2404/collabora/cron-update-collabora.yml` como referencia.
+
+**Agregar una fila en [[Playbooks/Actualizaciones Automáticas]]** con el horario, el cron file y el log. Escalonar los horarios para que no coincidan con otros servicios.

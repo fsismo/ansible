@@ -38,6 +38,8 @@ Al crear o modificar un servicio, **siempre actualizar la documentación** como 
 
 5. Si agrega un volumen NFS o directorio de storage nuevo, actualizar `obsidian/Infrastructure/Almacenamiento.md`
 
+6. Crear `ubu2404/{servicio}/cron-update-{servicio}.yml` que instale el cron job en localhost (ver `ubu2404/collabora/cron-update-collabora.yml` como referencia). Agregar una fila en `obsidian/Playbooks/Actualizaciones Automáticas.md` con el horario, el cron file y el log. Escalonar el horario para que no coincida con otros servicios.
+
 La documentación se actualiza en la misma sesión que el playbook, no después.
 
 ## Convenciones
