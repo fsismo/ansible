@@ -109,18 +109,29 @@ deja el cert en el trust store del OS y en
 > `compat: ["docker2s2"]` en `config.json` — sin esto zot rechaza (`manifest invalid`) los
 > manifests Docker V2 Schema 2 que produce `docker push` de imágenes de Docker Hub.
 
-### `htpasswd` requerido
+### `htpasswd` — alta y baja de usuarios
 
-El playbook **aborta** si no existe `/opt/docker/zot/htpasswd`. Crearlo manualmente en el host
-(no se commitea — está en `.gitignore`). Ejemplo con un contenedor efímero:
+El archivo `/opt/docker/zot/htpasswd` vive **en rbpi4002** y no se commitea (`.gitignore`).
+El playbook `zot.yml` **aborta** si no existe. zot lo **recarga en caliente** (fsnotify),
+no hace falta reiniciar.
+
+Gestión con `do.sh` (correr como root en `/opt/docker/zot`):
+
+```bash
+./do.sh adduser <nombre> [password]   # alta o cambio de contraseña (pide el password si se omite)
+./do.sh rmuser  <nombre>              # baja (sin argumento lista los usuarios)
+```
+
+`adduser` usa bcrypt (`htpasswd -B`) vía un contenedor `httpd:2.4-alpine` efímero.
+`rmuser` se niega a borrar el último usuario. Para el bootstrap del primer `admin` antes
+de tener `do.sh` desplegado:
 
 ```bash
 docker run --rm httpd:2.4-alpine htpasswd -Bbn admin 'MI_PASSWORD' | sudo tee /opt/docker/zot/htpasswd
-# agregar más usuarios:
-docker run --rm httpd:2.4-alpine htpasswd -Bbn ci 'OTRO_PASSWORD' | sudo tee -a /opt/docker/zot/htpasswd
 ```
 
-`-B` fuerza bcrypt (recomendado por zot). Tras editar el htpasswd, reiniciar: `systemctl restart zot`.
+Todos los usuarios del htpasswd obtienen `defaultPolicy` (`read`+`create`+`update` en `**`);
+para roles acotados hay que editar `accessControl` en `config.json`.
 
 ## Uso
 
