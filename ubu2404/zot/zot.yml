@@ -1,7 +1,13 @@
 # Despliega Zot (registro OCI privado) en rbpi4002 y lo pone bajo gestión de systemd.
-# Requiere que /opt/docker/zot/htpasswd ya exista (credenciales de push, no se commitea).
-# Generarlo con, por ejemplo:
-#   docker run --rm httpd:2.4-alpine htpasswd -Bbn admin 'MI_PASSWORD' > /opt/docker/zot/htpasswd
+#
+# Requisitos previos en el host (no se commitean al repo):
+#   - {{ compose_dir }}/htpasswd  — credenciales de push. Generar con:
+#       docker run --rm httpd:2.4-alpine htpasswd -Bbn admin 'MI_PASSWORD' > /opt/docker/zot/htpasswd
+#   - {{ compose_dir }}/certs/registry.sismonda.local.crt  — cert firmado por la CA local
+#   - {{ compose_dir }}/certs/registry.sismonda.local.key  — clave privada (sin passphrase)
+#     Generar el par con /mnt/storage/ca/crt-new-srv-v2.sh (nombre: registry, IP: 10.0.0.42,
+#     SAN extra: rbpi4002.sismonda.local) y copiarlos a certs/ como .crt / .key.
+#
 # Ver obsidian/Services/Zot.md para el detalle.
 ---
 - hosts: rbpi4002.sismonda.local
@@ -13,6 +19,9 @@
     compose_path: "{{ compose_dir }}/compose.yml"
     config_path: "{{ compose_dir }}/config.json"
     htpasswd_path: "{{ compose_dir }}/htpasswd"
+    certs_dir: "{{ compose_dir }}/certs"
+    tls_cert_path: "{{ certs_dir }}/registry.sismonda.local.crt"
+    tls_key_path: "{{ certs_dir }}/registry.sismonda.local.key"
     data_dir: /var/docker-data/{{ servicio }}
     service_file: /etc/systemd/system/{{ servicio }}.service
 
@@ -51,6 +60,47 @@
       owner: root
       group: root
       mode: 0644
+
+  - name: Verificar que existen el cert y la key TLS
+    stat:
+      path: "{{ item }}"
+    register: zot_tls_files
+    loop:
+      - "{{ tls_cert_path }}"
+      - "{{ tls_key_path }}"
+
+  - name: Abortar si falta el cert o la key TLS
+    fail:
+      msg: >
+        Falta {{ item.item }}. Generar el par con /mnt/storage/ca/crt-new-srv-v2.sh
+        y copiarlo a {{ certs_dir }}/ como registry.sismonda.local.crt / .key
+        (no se commitea al repo). Ver obsidian/Services/Zot.md.
+    loop: "{{ zot_tls_files.results }}"
+    loop_control:
+      label: "{{ item.item }}"
+    when: not item.stat.exists
+
+  - name: Normalizar permisos del directorio de certs
+    file:
+      path: "{{ certs_dir }}"
+      state: directory
+      owner: "1000"
+      group: "1000"
+      mode: 0750
+
+  - name: Normalizar permisos del cert TLS
+    file:
+      path: "{{ tls_cert_path }}"
+      owner: "1000"
+      group: "1000"
+      mode: 0644
+
+  - name: Normalizar permisos de la key TLS
+    file:
+      path: "{{ tls_key_path }}"
+      owner: "1000"
+      group: "1000"
+      mode: 0640
 
   - name: Copiar config.json
     template:

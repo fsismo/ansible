@@ -9,6 +9,10 @@
   "http": {
     "address": "0.0.0.0",
     "port": "5000",
+    "tls": {
+      "cert": "/etc/zot/certs/registry.sismonda.local.crt",
+      "key": "/etc/zot/certs/registry.sismonda.local.key"
+    },
     "auth": {
       "htpasswd": {
         "path": "/etc/zot/htpasswd"

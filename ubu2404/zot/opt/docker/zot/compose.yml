@@ -11,6 +11,7 @@ services:
       - /var/docker-data/zot:/var/lib/registry
       - ./config.json:/etc/zot/config.json:ro
       - ./htpasswd:/etc/zot/htpasswd:ro
+      - ./certs:/etc/zot/certs:ro
     environment:
       - TZ=America/Argentina/Buenos_Aires
     restart: unless-stopped

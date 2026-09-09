@@ -84,9 +84,13 @@
         port: 5000
         timeout: 60
 
-    - name: Verificar que la API OCI responde
+    - name: Verificar que la API OCI responde (HTTPS)
+      # validate_certs: no — es un chequeo de liveness contra 127.0.0.1, que no
+      # coincide con los SAN del cert; la validación real de la cadena la hace
+      # cada cliente contra registry.sismonda.local con la CA local instalada.
       uri:
-        url: http://127.0.0.1:5000/v2/
+        url: https://127.0.0.1:5000/v2/
+        validate_certs: no
         status_code: [200, 401]
       register: zot_api
       retries: 5

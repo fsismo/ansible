@@ -30,7 +30,7 @@ tags: [infraestructura, red, networking, vpn, dns]
 - Los hosts usan `127.0.0.1` como DNS (systemd-resolved deshabilitado)
 - Definiciones LAN sincronizadas desde NFS: `/mnt/storage/pihole/`
 - Zona: `sismonda.local`
-- Registro OCI privado: **[[../Services/Zot|Zot]]** en `rbpi4002.sismonda.local:5000` (HTTP plano, sólo LAN; opcionalmente alias `registry.sismonda.local`)
+- Registro OCI privado: **[[../Services/Zot|Zot]]** en `https://registry.sismonda.local:5000` (alias de `rbpi4002` en `lan.list`; TLS con cert de la CA local — ver [[../Playbooks/Utilidades#CA local — trust store|local-ca.yml]])
 
 ### Validación de DNS (en playbook de update)
 
