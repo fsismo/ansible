@@ -51,6 +51,27 @@ Cron: `rbpi-backup-crond` — backup periódico automático.
 
 ---
 
+## CA local — trust store
+
+**Archivo:** `utils/local-ca/local-ca.yml`
+**Hosts:** `all`
+
+```yaml
+copy: utils/local-ca/sismonda-ca.crt → /usr/local/share/ca-certificates/sismonda-ca.crt
+command: update-ca-certificates            # sólo si cambió el cert
+# además, donde exista /etc/docker:
+copy: sismonda-ca.crt → /etc/docker/certs.d/registry.sismonda.local:5000/ca.crt
+```
+
+Instala el certificado **público** de la CA `ca.sismonda.local` (copia de `/mnt/storage/ca/cacert.pem`)
+para que los hosts confíen en los certificados internos, en particular en
+**[[../Services/Zot|registry.sismonda.local]]**. La entrada en `/etc/docker/certs.d/` hace que
+Docker confíe en el registro sin reiniciar el daemon.
+
+Correr en un host puntual: `ansible-playbook -i hosts utils/local-ca/local-ca.yml --limit <host>`.
+
+---
+
 ## Resumen de playbooks disponibles
 
 | Playbook | Hosts | Función |
@@ -60,3 +81,4 @@ Cron: `rbpi-backup-crond` — backup periódico automático.
 | `utils/systemd-resolved.yml` | all (excl. DNS) | DNS resolver |
 | `utils/rbpi.yml` | rbpi3/4/5 | Setup específico RPi |
 | `utils/nut-client.yml` | all (excl. rbpi4003) | NUT UPS client |
+| `utils/local-ca/local-ca.yml` | all | Instala la CA local en el trust store (OS + Docker) |

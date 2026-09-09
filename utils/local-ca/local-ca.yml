@@ -1,0 +1,59 @@
+# Instala la CA local (ca.sismonda.local) en el trust store del OS de cada host y,
+# donde haya Docker, en /etc/docker/certs.d/ para que confíe en registry.sismonda.local
+# sin reiniciar el daemon.
+#
+# El cert incluido (sismonda-ca.crt) es el certificado PÚBLICO de la CA — copia de
+# /mnt/storage/ca/cacert.pem. No contiene la clave privada.
+#
+# Uso:
+#   ansible-playbook -i hosts utils/local-ca/local-ca.yml
+#   ansible-playbook -i hosts utils/local-ca/local-ca.yml --limit rbpi4002.sismonda.local
+---
+- hosts: all
+  become: yes
+
+  vars:
+    ca_src: "{{ playbook_dir }}/sismonda-ca.crt"
+    ca_system_path: /usr/local/share/ca-certificates/sismonda-ca.crt
+    # Debe coincidir con la referencia usada al hacer docker pull/push
+    # (host:puerto). Si el registro pasa a 443, quitar ":5000".
+    registry_ref: registry.sismonda.local:5000
+
+  tasks:
+
+  - name: Instalar la CA en el trust store del sistema
+    copy:
+      src: "{{ ca_src }}"
+      dest: "{{ ca_system_path }}"
+      owner: root
+      group: root
+      mode: 0644
+    register: ca_copy
+
+  - name: Actualizar el trust store del sistema
+    command: update-ca-certificates
+    when: ca_copy.changed
+    changed_when: true
+
+  - name: Detectar si el host tiene Docker
+    stat:
+      path: /etc/docker
+    register: docker_dir
+
+  - name: Crear /etc/docker/certs.d/{{ registry_ref }}
+    file:
+      path: "/etc/docker/certs.d/{{ registry_ref }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+    when: docker_dir.stat.exists
+
+  - name: Instalar la CA para Docker (confianza en {{ registry_ref }})
+    copy:
+      src: "{{ ca_src }}"
+      dest: "/etc/docker/certs.d/{{ registry_ref }}/ca.crt"
+      owner: root
+      group: root
+      mode: 0644
+    when: docker_dir.stat.exists

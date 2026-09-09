@@ -35,7 +35,7 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 ### Playbooks
 - [[Playbooks/Setup Base|Setup Base]] — herramientas comunes, Docker, NFS
 - [[Playbooks/NUT - UPS|NUT / UPS]] — monitoreo de UPS
-- [[Playbooks/Utilidades|Utilidades]] — backup, NTP, DNS resolver
+- [[Playbooks/Utilidades|Utilidades]] — backup, NTP, DNS resolver, CA local
 - [[Playbooks/Actualizaciones Automáticas|Actualizaciones Automáticas]] — cron jobs de update con rollback
 
 ### Referencia
