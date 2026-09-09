@@ -1,0 +1,10 @@
+# Network UPS Tools: upsd.users
+[admin]
+    password = {{ nut_admin_password }}
+    actions = set
+    actions = fsd
+    instcmds = all 
+
+[monuser]
+    password = {{ nut_monuser_password }}
+    upsmon master
