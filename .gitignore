@@ -1,4 +1,7 @@
 ubu2404/ext-www/opt/docker/ext-www/.env
 ubu2404/phwrgrd/opt/docker/phwrgrd/.env
 ubu2404/n8n/opt/docker/n8n/.env
+ubu2404/collabora/opt/docker/collabora/.env
+ubu2404/immich/opt/docker/immich/.env
+ubu2404/hermes-agent/opt/docker/hermes-agent/.env
 .vscode/settings.json
