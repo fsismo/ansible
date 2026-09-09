@@ -1,0 +1,13 @@
+"services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    volumes:
+      - {{ searxng_data_dir }}:/opt/searxng
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Madrid
+      # Add any other environment variables here
+"
