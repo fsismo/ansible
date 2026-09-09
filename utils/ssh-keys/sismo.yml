@@ -1,0 +1,12 @@
+---
+- hosts: rbpi3-001.sismonda.local,rbpi4001.sismonda.local,rbpi4002.sismonda.local,rbpi5001.sismonda.local,rbpi5002.sismonda.local
+  become: yes
+
+  tasks:
+  - name: Sincronizar llaves públicas de sismo
+    authorized_key:
+      user: sismo
+      state: present
+      exclusive: yes
+      manage_dir: yes
+      key: "{{ lookup('pipe', 'cat ' + playbook_dir + '/sismo/*.pub') }}"
