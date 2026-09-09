@@ -1,0 +1,16 @@
+---
+services:
+
+  zot:
+    image: ghcr.io/project-zot/zot:v2.1.21
+    container_name: zot
+    user: "1000:1000"
+    ports:
+      - 5000:5000
+    volumes:
+      - /var/docker-data/zot:/var/lib/registry
+      - ./config.json:/etc/zot/config.json:ro
+      - ./htpasswd:/etc/zot/htpasswd:ro
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+    restart: unless-stopped

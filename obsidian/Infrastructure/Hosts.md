@@ -58,7 +58,7 @@ Archivo de inventario: `hosts`
 ```
 alphaprime        → Ollama (AI), Plex, Collabora Online
 rbpi4001          → Pi-Hole+WireGuard (master), SearXNG, NUT server, UniFi
-rbpi4002          → Pi-Hole+WireGuard (replica)
+rbpi4002          → Pi-Hole+WireGuard (replica), Zot Registry (OCI)
 rbpi5001          → Nginx Proxy Manager, Pi-Hole+WireGuard, Torrents (Arr)
 rbpi5002          → Nextcloud, WordPress, MariaDB, NPM, AudioBookShelf
 rbpi3-001         → DNS (Pi-Hole standalone)

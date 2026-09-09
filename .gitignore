@@ -4,4 +4,5 @@ ubu2404/n8n/opt/docker/n8n/.env
 ubu2404/collabora/opt/docker/collabora/.env
 ubu2404/immich/opt/docker/immich/.env
 ubu2404/hermes-agent/opt/docker/hermes-agent/.env
+ubu2404/zot/opt/docker/zot/htpasswd
 .vscode/settings.json

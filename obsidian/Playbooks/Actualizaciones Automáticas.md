@@ -19,6 +19,7 @@ Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de 
 | Collabora | Domingos 23:30 | `/etc/cron.d/update-collabora` | `/var/log/ansible-update-collabora.log` |
 | Hermes Agent | Domingos 23:45 | `/etc/cron.d/update-hermes-agent` | `/var/log/ansible-update-hermes-agent.log` |
 | Torrents | Sábados 23:00 | `/etc/cron.d/update-torrents` | `/var/log/ansible-update-torrents.log` |
+| Zot | Sábados 23:30 | `/etc/cron.d/update-zot` | `/var/log/ansible-update-zot.log` |
 | AudioBookShelf | Domingos 22:45 | `/etc/cron.d/update-audiobookshelf` | `/var/log/ansible-update-audiobookshelf.log` |
 | n8n | Domingos 22:30 | `/etc/cron.d/update-n8n` | `/var/log/ansible-update-n8n.log` |
 
@@ -31,6 +32,7 @@ Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de 
 | Collabora | `ubu2404/collabora/` | `update-collabora.yml` | `cron-update-collabora.yml` |
 | Hermes Agent | `ubu2404/hermes-agent/` | `update-hermes-agent.yml` | `cron-update-hermes-agent.yml` |
 | Torrents | `ubu2404/torrents/` | `update-torrents.yml` | `cron-update-torrents.yml` |
+| Zot | `ubu2404/zot/` | `update-zot.yml` | `cron-update-zot.yml` |
 | AudioBookShelf | `ubu2404/ext-www/` | `update-audiobookshelf.yml` | `cron-update-audiobookshelf.yml` |
 | n8n | `ubu2404/n8n/` | `update-n8n.yml` | `cron-update-n8n.yml` |
 

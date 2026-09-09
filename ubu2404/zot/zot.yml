@@ -1,0 +1,96 @@
+# Despliega Zot (registro OCI privado) en rbpi4002 y lo pone bajo gestión de systemd.
+# Requiere que /opt/docker/zot/htpasswd ya exista (credenciales de push, no se commitea).
+# Generarlo con, por ejemplo:
+#   docker run --rm httpd:2.4-alpine htpasswd -Bbn admin 'MI_PASSWORD' > /opt/docker/zot/htpasswd
+# Ver obsidian/Services/Zot.md para el detalle.
+---
+- hosts: rbpi4002.sismonda.local
+  become: yes
+
+  vars:
+    servicio: zot
+    compose_dir: /opt/docker/{{ servicio }}
+    compose_path: "{{ compose_dir }}/compose.yml"
+    config_path: "{{ compose_dir }}/config.json"
+    htpasswd_path: "{{ compose_dir }}/htpasswd"
+    data_dir: /var/docker-data/{{ servicio }}
+    service_file: /etc/systemd/system/{{ servicio }}.service
+
+  tasks:
+  - name: Crear directorio {{ compose_dir }}
+    file:
+      path: "{{ compose_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Crear directorio de datos del registro
+    file:
+      path: "{{ data_dir }}"
+      state: directory
+      owner: "1000"
+      group: "1000"
+      mode: 0755
+
+  - name: Verificar que existe el htpasswd
+    stat:
+      path: "{{ htpasswd_path }}"
+    register: zot_htpasswd_file
+
+  - name: Abortar si falta el htpasswd
+    fail:
+      msg: >
+        {{ htpasswd_path }} no existe. Crearlo manualmente antes de correr este playbook
+        (ver obsidian/Services/Zot.md) — no se commitea al repo.
+    when: not zot_htpasswd_file.stat.exists
+
+  - name: Normalizar permisos del htpasswd
+    file:
+      path: "{{ htpasswd_path }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar config.json
+    template:
+      src: opt/docker/zot/config.json
+      dest: "{{ config_path }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/zot/compose.yml
+      dest: "{{ compose_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar do.sh
+    template:
+      src: opt/docker/zot/do.sh
+      dest: "{{ compose_dir }}/do.sh"
+      owner: root
+      group: root
+      mode: 0750
+      backup: yes
+
+  - name: Copiar zot.service
+    template:
+      src: etc/systemd/system/zot.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Habilitar e iniciar zot.service
+    systemd:
+      name: "{{ servicio }}.service"
+      state: started
+      daemon_reload: yes
+      enabled: yes

@@ -68,9 +68,10 @@ Cada servicio mantiene sus datos en el host local bajo `/var/docker-data/`:
 │   ├── sonarr/
 │   ├── bazarr/
 │   └── transmission/
-└── ext-www/                ← Nextcloud, WordPress, MariaDB, AudioBookShelf
-    ├── mysql/
-    ├── nextcloud/
-    ├── wordpress/
-    └── audiobookshelf/
+├── ext-www/                ← Nextcloud, WordPress, MariaDB, AudioBookShelf
+│   ├── mysql/
+│   ├── nextcloud/
+│   ├── wordpress/
+│   └── audiobookshelf/
+└── zot/                    ← Zot OCI Registry — blobs y manifests (rbpi4002)
 ```

@@ -30,6 +30,7 @@ tags: [infraestructura, red, networking, vpn, dns]
 - Los hosts usan `127.0.0.1` como DNS (systemd-resolved deshabilitado)
 - Definiciones LAN sincronizadas desde NFS: `/mnt/storage/pihole/`
 - Zona: `sismonda.local`
+- Registro OCI privado: **[[../Services/Zot|Zot]]** en `rbpi4002.sismonda.local:5000` (HTTP plano, sólo LAN; opcionalmente alias `registry.sismonda.local`)
 
 ### Validación de DNS (en playbook de update)
 

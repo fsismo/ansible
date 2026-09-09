@@ -30,6 +30,7 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 | [[Services/Immich\|Immich]] | alphaprime | Backup y gestión de fotos/videos |
 | [[Services/AudioBookShelf\|AudioBookShelf]] | rbpi5002 | Servidor de audiolibros |
 | [[Services/n8n\|n8n]] | alphaprime | Automatización de workflows |
+| [[Services/Zot\|Zot Registry]] | rbpi4002 | Registro OCI privado de contenedores |
 
 ### Playbooks
 - [[Playbooks/Setup Base|Setup Base]] — herramientas comunes, Docker, NFS
