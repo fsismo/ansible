@@ -80,9 +80,15 @@ deja el cert en el trust store del OS y en
 
 ## Autenticación
 
-- **Pull anónimo**: permitido para cualquier cliente de la LAN (`anonymousPolicy: ["read"]`).
+- **Pull anónimo**: permitido a nivel política (`anonymousPolicy: ["read"]`) — funciona con
+  clientes OCI (`skopeo`, `crane`, `containerd`, `podman`, `curl`). **El CLI de Docker NO** puede
+  pullear anónimo: zot devuelve `401` en `/v2/` a cualquier cliente cuyo `User-Agent` contenga
+  `docker`, así que los hosts con Docker deben hacer `docker login` una vez (ver más abajo).
 - **Push / update**: requiere usuario autenticado vía htpasswd (`defaultPolicy: ["read", "create", "update"]`).
 - **Delete**: sólo el usuario `admin` (`adminPolicy`).
+
+> `compat: ["docker2s2"]` en `config.json` — sin esto zot rechaza (`manifest invalid`) los
+> manifests Docker V2 Schema 2 que produce `docker push` de imágenes de Docker Hub.
 
 ### `htpasswd` requerido
 
@@ -100,15 +106,23 @@ docker run --rm httpd:2.4-alpine htpasswd -Bbn ci 'OTRO_PASSWORD' | sudo tee -a 
 ## Uso
 
 ```bash
-# login (sólo necesario para push)
+# login — necesario para push Y para pull con el CLI de Docker (una vez por host)
 docker login registry.sismonda.local:5000 -u admin
 
 # push
 docker tag miapp:latest registry.sismonda.local:5000/miapp:latest
 docker push registry.sismonda.local:5000/miapp:latest
 
-# pull (anónimo)
+# pull
 docker pull registry.sismonda.local:5000/miapp:latest
+```
+
+Pull anónimo con clientes OCI (sin `docker login`):
+
+```bash
+skopeo copy docker://registry.sismonda.local:5000/miapp:latest oci:/tmp/miapp
+curl https://registry.sismonda.local:5000/v2/_catalog        # requiere auth
+curl https://registry.sismonda.local:5000/v2/miapp/tags/list  # anónimo OK
 ```
 
 Requiere haber corrido `utils/local-ca/local-ca.yml` en el host (confianza en la CA). Con TLS

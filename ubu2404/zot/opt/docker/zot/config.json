@@ -9,6 +9,7 @@
   "http": {
     "address": "0.0.0.0",
     "port": "5000",
+    "compat": ["docker2s2"],
     "tls": {
       "cert": "/etc/zot/certs/registry.sismonda.local.crt",
       "key": "/etc/zot/certs/registry.sismonda.local.key"
