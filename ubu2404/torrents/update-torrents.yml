@@ -1,0 +1,106 @@
+# Actualiza los contenedores del stack torrents (prowlarr, radarr, sonarr,
+# bazarr, transmission, flaresolverr) y verifica que quedaron corriendo.
+# Si la verificación falla, revierte automáticamente al estado anterior.
+---
+- hosts: rbpi5001.sismonda.local
+  become: yes
+  any_errors_fatal: true
+  serial: 1
+
+  vars:
+    servicio: torrents
+    compose_dir: /opt/docker/{{ servicio }}
+    compose_path: "{{ compose_dir }}/compose.yml"
+    log_file: /var/log/ansible-update-{{ servicio }}.log
+
+  tasks:
+
+  - block:
+
+    - name: Registrar versiones previas al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update iniciado ===" >> {{ log_file }}
+        docker compose ps --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Copiar compose.yml actualizado
+      template:
+        src: /mnt/storage/ansible/ubu2404/{{ servicio }}/opt/docker/{{ servicio }}/compose.yml
+        dest: "{{ compose_path }}"
+        owner: root
+        group: root
+        mode: 0640
+        backup: yes
+      register: compose_copy
+
+    - name: Etiquetar imágenes actuales como rollback
+      shell: |
+        docker compose config --images | while IFS= read -r image; do
+          id=$(docker inspect --format '{% raw %}{{.Id}}{% endraw %}' "$image" 2>/dev/null) || continue
+          docker tag "$id" "${image%%:*}:_rollback"
+        done
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+      register: tag_rollback
+
+    - name: Parar el servicio
+      systemd:
+        name: "{{ servicio }}.service"
+        state: stopped
+
+    - name: Pull de las últimas imágenes
+      community.docker.docker_compose_v2_pull:
+        project_src: "{{ compose_dir }}"
+
+    - name: Iniciar el servicio
+      systemd:
+        name: "{{ servicio }}.service"
+        state: started
+
+    - name: Verificar que todos los contenedores están running
+      shell: >-
+        docker compose ps --format json |
+        python3 -c "import sys,json; bad=[c['Name'] for c in (json.loads(l) for l in sys.stdin if l.strip()) if c.get('State')!='running']; sys.exit('Contenedores no running: '+', '.join(bad)) if bad else None"
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Registrar versiones posteriores al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update completado ===" >> {{ log_file }}
+        docker compose ps --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    rescue:
+
+    - name: "[ROLLBACK] Restaurar compose anterior desde backup"
+      copy:
+        src: "{{ compose_copy.backup_file }}"
+        dest: "{{ compose_path }}"
+        remote_src: yes
+      when: compose_copy.backup_file is defined
+
+    - name: "[ROLLBACK] Restaurar imágenes previas"
+      shell: |
+        docker compose config --images | while IFS= read -r image; do
+          docker tag "${image%%:*}:_rollback" "$image" 2>/dev/null || true
+        done
+      args:
+        chdir: "{{ compose_dir }}"
+      when: tag_rollback is defined and tag_rollback.rc == 0
+
+    - name: "[ROLLBACK] Iniciar servicio con estado anterior"
+      systemd:
+        name: "{{ servicio }}.service"
+        state: started
+
+    - name: "[ROLLBACK] Abortar con error tras revertir"
+      fail:
+        msg: >
+          La verificación falló. Se revirtió al estado anterior.
+          Revisá {{ log_file }} antes de volver a ejecutar.

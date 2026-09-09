@@ -1,0 +1,4 @@
+# Network UPS Tools: ups.conf
+[{{ nut_ups_name | default('ups') }}]
+    driver = {{ nut_ups_driver | default('usbhid-ups') }}
+    port = {{ nut_ups_port | default('auto') }}

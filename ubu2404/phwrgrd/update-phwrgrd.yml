@@ -1,6 +1,6 @@
-# Actualiza los contenedores del compose (pihole + wireguard) y valida que el DNS
-# de pihole resuelva correctamente los registros internos y externos esperados.
-# Si la validación DNS falla, revierte automáticamente al backup del compose anterior.
+# Actualiza los contenedores de phwrgrd (pihole + wireguard) y valida que el DNS
+# resuelva correctamente los registros internos y externos esperados.
+# Si la verificación falla, revierte automáticamente al estado anterior.
 ---
 - hosts: phwrgrd
   become: yes
@@ -8,11 +8,12 @@
   serial: 1
 
   vars:
-    compose_path: /opt/docker/phwrgrd/compose.yml
+    servicio: phwrgrd
+    compose_dir: /opt/docker/phwrgrd
+    compose_path: "{{ compose_dir }}/compose.yml"
     log_file: /var/log/ansible-update-phwrgrd.log
     dns_checks:
-      - { host: "printer.sismonda.local",  expected_ip: "10.0.0.80" }
-      - { host: "www.sismonda.com.ar",      expected_ip: "10.0.0.52" }
+      - { host: "printer.sismonda.local", expected_ip: "10.0.0.80" }
 
   tasks:
 
@@ -20,8 +21,10 @@
 
     - name: Registrar versiones previas al update
       shell: |
-        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Versiones previas ===" >> {{ log_file }}
-        docker inspect --format='  {% raw %}{{.Name}}: {{.Config.Image}} [{{.Image}}]{% endraw %}' wireguard pihole >> {{ log_file }} 2>/dev/null || true
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update iniciado ===" >> {{ log_file }}
+        docker compose ps --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
       changed_when: false
 
     - name: Copiar compose.yml actualizado
@@ -36,22 +39,51 @@
 
     - name: Etiquetar imágenes actuales como rollback
       shell: |
-        docker tag $(docker inspect --format='{% raw %}{{.Image}}{% endraw %}' wireguard) lscr.io/linuxserver/wireguard:rollback
-        docker tag $(docker inspect --format='{% raw %}{{.Image}}{% endraw %}' pihole) pihole/pihole:rollback
+        docker compose config --images | while IFS= read -r image; do
+          id=$(docker inspect --format '{% raw %}{{.Id}}{% endraw %}' "$image" 2>/dev/null) || continue
+          docker tag "$id" "${image%%:*}:_rollback"
+        done
+      args:
+        chdir: "{{ compose_dir }}"
       changed_when: false
       register: tag_rollback
 
     - name: Pull de las últimas imágenes
+      # Se hace antes de parar el servicio: Pi-Hole todavía está arriba
+      # resolviendo DNS y el pull no depende de que el propio Pi-Hole
+      # (que provee el DNS del host) esté caído.
+      # Reintenta ante timeouts puntuales de DNS (ej. contención de red/CPU
+      # en la Raspberry Pi), sin taparlos si el fallo persiste.
       community.docker.docker_compose_v2_pull:
-        project_src: /opt/docker/phwrgrd
+        project_src: "{{ compose_dir }}"
+      register: pull_result
+      until: pull_result is succeeded
+      retries: 3
+      delay: 10
 
-    - name: Recrear contenedores con las nuevas imágenes
-      community.docker.docker_compose_v2:
-        project_src: /opt/docker/phwrgrd
-        state: present
-        pull: never
-        recreate: always
-        remove_orphans: yes
+    - name: Determinar si hace falta reiniciar el servicio
+      set_fact:
+        needs_restart: "{{ compose_copy.changed or pull_result.changed }}"
+
+    - name: Parar el servicio
+      systemd:
+        name: "{{ servicio }}.service"
+        state: stopped
+      when: needs_restart
+
+    - name: Iniciar el servicio
+      systemd:
+        name: "{{ servicio }}.service"
+        state: started
+      when: needs_restart
+
+    - name: Verificar que todos los contenedores están running
+      shell: >-
+        docker compose ps --format json |
+        python3 -c "import sys,json; bad=[c['Name'] for c in (json.loads(l) for l in sys.stdin if l.strip()) if c.get('State')!='running']; sys.exit('Contenedores no running: '+', '.join(bad)) if bad else None"
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
 
     - name: Esperar que el puerto TCP 53 de pihole esté disponible
       wait_for:
@@ -79,6 +111,14 @@
           OK: {{ item.item.host }} -> {{ item.stdout | trim }}
       loop: "{{ dns_results.results }}"
 
+    - name: Registrar versiones posteriores al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update completado ===" >> {{ log_file }}
+        docker compose ps --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
     rescue:
 
     - name: "[ROLLBACK] Restaurar compose anterior desde backup"
@@ -90,29 +130,20 @@
 
     - name: "[ROLLBACK] Restaurar imágenes previas"
       shell: |
-        docker tag lscr.io/linuxserver/wireguard:rollback lscr.io/linuxserver/wireguard:latest
-        docker tag pihole/pihole:rollback pihole/pihole:latest
+        docker compose config --images | while IFS= read -r image; do
+          docker tag "${image%%:*}:_rollback" "$image" 2>/dev/null || true
+        done
+      args:
+        chdir: "{{ compose_dir }}"
       when: tag_rollback is defined and tag_rollback.rc == 0
 
-    - name: "[ROLLBACK] Recrear contenedores con la versión anterior"
-      community.docker.docker_compose_v2:
-        project_src: /opt/docker/phwrgrd
-        state: present
-        pull: never
-        recreate: always
-        remove_orphans: yes
-      when: compose_copy.backup_file is defined
-
-    - name: "[ROLLBACK] Esperar que el DNS vuelva a estar disponible"
-      wait_for:
-        host: "{{ ansible_default_ipv4.address }}"
-        port: 53
-        timeout: 60
-      delegate_to: localhost
-      when: compose_copy.backup_file is defined
+    - name: "[ROLLBACK] Iniciar servicio con estado anterior"
+      systemd:
+        name: "{{ servicio }}.service"
+        state: started
 
     - name: "[ROLLBACK] Abortar con error tras revertir"
       fail:
         msg: >
-          La validación DNS falló. Se revirtió al compose anterior.
-          Revisá los cambios antes de volver a ejecutar.
+          La verificación falló. Se revirtió al estado anterior.
+          Revisá {{ log_file }} antes de volver a ejecutar.

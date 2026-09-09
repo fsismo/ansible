@@ -1,0 +1,33 @@
+# Configura un cron job en localhost para ejecutar update-n8n.yml
+# los domingos a las 22:30 y registrar la salida en un log.
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  vars:
+    log_file: /var/log/ansible-update-n8n.log
+    cron_file: /etc/cron.d/update-n8n
+    playbook_cmd: >-
+      ansible-playbook -i /mnt/storage/ansible/hosts
+      /mnt/storage/ansible/ubu2404/n8n/update-n8n.yml
+
+  tasks:
+
+  - name: Crear archivo de log
+    file:
+      path: "{{ log_file }}"
+      state: touch
+      owner: ansible
+      group: ansible
+      mode: 0640
+
+  - name: Configurar cron job semanal (domingos 22:30)
+    copy:
+      dest: "{{ cron_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      content: |
+        # Ejecuta update-n8n.yml cada domingo a las 22:30
+        30 22 * * 0 ansible {{ playbook_cmd }} >> {{ log_file }} 2>&1

@@ -56,11 +56,11 @@ Archivo de inventario: `hosts`
 ## Diagrama de servicios por host
 
 ```
-alphaprime        → Ollama (AI), Plex
+alphaprime        → Ollama (AI), Plex, Collabora Online
 rbpi4001          → Pi-Hole+WireGuard (master), SearXNG, NUT server, UniFi
 rbpi4002          → Pi-Hole+WireGuard (replica)
 rbpi5001          → Nginx Proxy Manager, Pi-Hole+WireGuard, Torrents (Arr)
-rbpi5002          → Nextcloud, WordPress, MariaDB, NPM
+rbpi5002          → Nextcloud, WordPress, MariaDB, NPM, AudioBookShelf
 rbpi3-001         → DNS (Pi-Hole standalone)
 alphaprime-dev    → Syncthing, Minecraft
 ```

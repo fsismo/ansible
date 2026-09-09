@@ -1,0 +1,73 @@
+- hosts: alphaprime.sismonda.local
+  become: yes
+
+  vars:
+    servicio: n8n
+    compose_dir: /opt/docker/{{ servicio }}
+    compose_path: "{{ compose_dir }}/compose.yml"
+    env_path: "{{ compose_dir }}/.env"
+    data_dir: /var/docker-data/{{ servicio }}
+    service_file: /etc/systemd/system/{{ servicio }}.service
+
+  tasks:
+  - name: Crear directorio {{ compose_dir }}
+    file:
+      path: "{{ compose_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Crear directorios de datos persistentes
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: "1000"
+      group: "1000"
+      mode: 0755
+    loop:
+      - "{{ data_dir }}/node"
+      - "{{ data_dir }}/local-files"
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/n8n/compose.yml
+      dest: "{{ compose_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar do.sh
+    template:
+      src: opt/docker/n8n/do.sh
+      dest: "{{ compose_dir }}/do.sh"
+      owner: root
+      group: root
+      mode: 0750
+      backup: yes
+
+  - name: Crear .env desde el ejemplo si no existe
+    copy:
+      src: opt/docker/n8n/.env.example
+      dest: "{{ env_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      force: no
+
+  - name: Copiar n8n.service
+    template:
+      src: etc/systemd/system/n8n.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Habilitar e iniciar n8n.service
+    systemd:
+      name: "{{ servicio }}.service"
+      state: started
+      daemon_reload: yes
+      enabled: yes

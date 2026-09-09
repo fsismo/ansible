@@ -1,0 +1,113 @@
+---
+- hosts: alphaprime.sismonda.local
+  become: yes
+
+  tasks:
+  - name: Include Docker / Docker Compose Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Detectar modelo hermes3 disponible en Ollama
+    shell: |
+      curl -s http://localhost:11434/api/tags | \
+      python3 -c "
+      import sys, json
+      models = [m['name'] for m in json.load(sys.stdin).get('models', []) if 'hermes3' in m['name']]
+      print(models[0] if models else 'hermes3:8b')
+      "
+    register: detected_model
+    changed_when: false
+    failed_when: false
+
+  - name: Establecer modelo para Hermes Agent
+    set_fact:
+      hermes_model: "{{ detected_model.stdout | default('hermes3:8b') }}"
+
+  - name: Crear directorio /opt/docker/hermes-agent
+    file:
+      path: /opt/docker/hermes-agent
+      state: directory
+      owner: root
+      group: root
+      mode: 0750
+
+  - name: Crear directorio de datos /var/docker-data/hermes-agent
+    file:
+      path: /var/docker-data/hermes-agent
+      state: directory
+      owner: root
+      group: root
+      mode: 0750
+
+  - name: Copiar Compose
+    template:
+      src: /mnt/storage/ansible/ubu2404/hermes-agent/opt/docker/hermes-agent/compose.yml
+      dest: /opt/docker/hermes-agent/compose.yml
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+    notify: Reiniciar hermes-agent
+
+  - name: Copiar do.sh
+    template:
+      src: /mnt/storage/ansible/ubu2404/hermes-agent/opt/docker/hermes-agent/do.sh
+      dest: /opt/docker/hermes-agent/do.sh
+      owner: root
+      group: root
+      mode: 0740
+      backup: yes
+
+  - name: Verificar si existe .env
+    stat:
+      path: /opt/docker/hermes-agent/.env
+    register: hermes_env_file
+
+  - name: Generar API_SERVER_KEY
+    shell: openssl rand -hex 32
+    register: api_server_key
+    when: not hermes_env_file.stat.exists
+
+  - name: Crear .env con API_SERVER_KEY
+    copy:
+      dest: /opt/docker/hermes-agent/.env
+      content: "API_SERVER_KEY={{ api_server_key.stdout }}\n"
+      owner: root
+      group: root
+      mode: 0640
+    when: not hermes_env_file.stat.exists
+
+  - name: Crear/actualizar config.yaml apuntando a Ollama
+    copy:
+      dest: /var/docker-data/hermes-agent/config.yaml
+      content: |
+        model:
+          provider: custom
+          model: "{{ hermes_model }}"
+          base_url: http://ollama:11434/v1
+          api_key: "none"
+      owner: root
+      group: root
+      mode: 0640
+    notify: Reiniciar hermes-agent
+
+  - name: Copiar hermes-agent.service
+    template:
+      src: /mnt/storage/ansible/ubu2404/hermes-agent/etc/systemd/system/hermes-agent.service
+      dest: /etc/systemd/system/hermes-agent.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Configurar ejecución de hermes-agent.service
+    systemd:
+      name: hermes-agent.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  handlers:
+  - name: Reiniciar hermes-agent
+    systemd:
+      name: hermes-agent.service
+      state: restarted

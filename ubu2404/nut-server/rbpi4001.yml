@@ -1,0 +1,100 @@
+---
+# ansible-playbook -i inventory rbpi4001.yml -e "nut_admin_password=secret nut_monuser_password=secret2"
+- hosts: rbpi4001.sismonda.local
+  become: true
+  handlers:
+    - name: restart_service
+      service:
+        name: nut-server
+        state: restarted
+
+    - name: daemon_reload
+      systemd:
+        daemon_reload: true
+
+  tasks:
+    - name: Instalar Nut.
+      package:
+        name:
+          - nut
+        state: present
+      notify:
+        - daemon_reload
+
+    - name: Copiar nut.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/templates/nut.conf.j2
+        dest: /etc/nut/nut.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+        validate: '/bin/sh -c: %%s'
+      notify:
+        - restart_service
+
+    - name: Copiar upsd.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/templates/upsd.conf.j2
+        dest: /etc/nut/upsd.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      notify:
+        - restart_service
+
+    - name: Copiar upsd.users.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/templates/upsd.users.j2
+        dest: /etc/nut/upsd.users
+        owner: root
+        group: nut
+        mode: 0600
+        backup: true
+      notify:
+        - restart_service
+
+    - name: Copiar upsmon.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/templates/upsmon.conf.j2
+        dest: /etc/nut/upsmon.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      notify:
+        - restart_service
+
+    - name: Copiar ups.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/templates/ups.conf.j2
+        dest: /etc/nut/ups.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      notify:
+        - restart_service
+
+    - name: Copiar check-status.sh.
+      copy:
+        src: /mnt/storage/ansible/ubu2404/nut-server/opt/nut/check-status.sh
+        dest: /opt/nut/check-status.sh
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Copiar nut-status cron.
+      copy:
+        src: /mnt/storage/ansible/ubu2404/nut-server/etc/cron.d/nut-status
+        dest: /etc/cron.d/nut-status
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Verificar ejecución de Nut.
+      systemd:
+        name: nut-server
+        state: started
+        enabled: true

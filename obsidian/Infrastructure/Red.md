@@ -60,8 +60,9 @@ Cliente externo
      ▼ HTTPS 443
 [Nginx Proxy Manager] rbpi5001
      │
-     ├── sismonda.com.ar  ──► [WordPress]   rbpi5002:172.31.0.22
-     ├── cloud.sismonda.* ──► [Nextcloud]   rbpi5002:172.31.0.20
+     ├── sismonda.com.ar  ──► [WordPress]       rbpi5002:172.31.0.22
+     ├── cloud.sismonda.* ──► [Nextcloud]       rbpi5002:172.31.0.20
+     ├── audiobooks.*     ──► [AudioBookShelf]  rbpi5002:172.31.0.24
      └── otros subdominios
      
 Cliente VPN

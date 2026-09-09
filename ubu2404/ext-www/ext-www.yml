@@ -1,6 +1,5 @@
-# Despliega un compose.yml con un contenedor de pihole y otro de wireguard.
-# Provee vpn y DNS con filtro de publicidad.
-# Sincroniza un lan.list para tener dns interno.
+# Despliega el stack ext-www (rbpi5002): MariaDB, NPM interno, Nextcloud,
+# WordPress, AudioBookShelf, SMTP relay y el túnel de Cloudflare.
 ---
 - hosts: rbpi5002.sismonda.local
   become: yes
@@ -57,6 +56,16 @@
       path: /var/docker-data/ext-www/wordpress-redis
       state: directory
 
+  - name: Crear directorios de storage persistente de AudioBookShelf
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: "1000"
+      group: "1000"
+    loop:
+      - /var/docker-data/ext-www/audiobookshelf/config
+      - /var/docker-data/ext-www/audiobookshelf/metadata
+
   - name: Crear directorio /opt/docker/ext-www
     file:
       path: /opt/docker/ext-www
@@ -74,8 +83,8 @@
 
   - name: Copiar compose.yml
     template:
-      src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/docker-compose.yml
-      dest: /opt/docker/ext-www/docker-compose.yml
+      src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/compose.yml
+      dest: /opt/docker/ext-www/compose.yml
       owner: root
       group: root
       mode: 0640

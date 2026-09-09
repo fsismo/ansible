@@ -1,6 +1,21 @@
 ---
 services:
 
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Argentina/Buenos_Aires
+    volumes:
+      - /var/docker-data/torrents/bazarr/config:/config
+      - /mnt/storage/Plex/Videos/Movies:/movies #optional
+      - /mnt/storage/Plex/Videos/TV Shows:/tv #optional
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+
   flaresolverr:
     # DockerHub mirror flaresolverr/flaresolverr:latest
     image: ghcr.io/flaresolverr/flaresolverr:latest

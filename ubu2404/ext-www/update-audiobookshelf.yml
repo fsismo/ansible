@@ -1,0 +1,106 @@
+# Actualiza únicamente el contenedor audiobookshelf dentro del stack ext-www
+# (rbpi5002) y verifica que quedó corriendo. No toca Nextcloud, WordPress,
+# MariaDB ni el resto del stack.
+# Si la verificación falla, revierte automáticamente al estado anterior.
+---
+- hosts: rbpi5002.sismonda.local
+  become: yes
+  any_errors_fatal: true
+  serial: 1
+
+  vars:
+    servicio: audiobookshelf
+    compose_dir: /opt/docker/ext-www
+    compose_path: "{{ compose_dir }}/compose.yml"
+    log_file: /var/log/ansible-update-{{ servicio }}.log
+
+  tasks:
+
+  - block:
+
+    - name: Registrar versiones previas al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update iniciado ===" >> {{ log_file }}
+        docker compose ps {{ servicio }} --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Copiar compose.yml actualizado
+      template:
+        src: /mnt/storage/ansible/ubu2404/ext-www/opt/docker/ext-www/compose.yml
+        dest: "{{ compose_path }}"
+        owner: root
+        group: root
+        mode: 0640
+        backup: yes
+      register: compose_copy
+
+    - name: Etiquetar imagen actual como rollback
+      shell: |
+        image=$(docker compose config --images {{ servicio }})
+        id=$(docker inspect --format '{% raw %}{{.Id}}{% endraw %}' "$image")
+        docker tag "$id" "${image%%:*}:_rollback"
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+      register: tag_rollback
+
+    - name: Parar el contenedor audiobookshelf
+      shell: docker compose stop {{ servicio }}
+      args:
+        chdir: "{{ compose_dir }}"
+
+    - name: Pull de la última imagen de audiobookshelf
+      shell: docker compose pull {{ servicio }}
+      args:
+        chdir: "{{ compose_dir }}"
+
+    - name: Iniciar el contenedor audiobookshelf
+      shell: docker compose up -d {{ servicio }}
+      args:
+        chdir: "{{ compose_dir }}"
+
+    - name: Verificar que el contenedor está running
+      shell: >-
+        docker compose ps {{ servicio }} --format json |
+        python3 -c "import sys,json; bad=[c['Name'] for c in (json.loads(l) for l in sys.stdin if l.strip()) if c.get('State')!='running']; sys.exit('Contenedores no running: '+', '.join(bad)) if bad else None"
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Registrar versiones posteriores al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update completado ===" >> {{ log_file }}
+        docker compose ps {{ servicio }} --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    rescue:
+
+    - name: "[ROLLBACK] Restaurar compose.yml anterior desde backup"
+      copy:
+        src: "{{ compose_copy.backup_file }}"
+        dest: "{{ compose_path }}"
+        remote_src: yes
+      when: compose_copy.backup_file is defined
+
+    - name: "[ROLLBACK] Restaurar imagen previa de audiobookshelf"
+      shell: |
+        image=$(docker compose config --images {{ servicio }})
+        docker tag "${image%%:*}:_rollback" "$image" 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      when: tag_rollback is defined and tag_rollback.rc == 0
+
+    - name: "[ROLLBACK] Iniciar audiobookshelf con estado anterior"
+      shell: docker compose up -d {{ servicio }}
+      args:
+        chdir: "{{ compose_dir }}"
+
+    - name: "[ROLLBACK] Abortar con error tras revertir"
+      fail:
+        msg: >
+          La verificación falló. Se revirtió al estado anterior.
+          Revisá {{ log_file }} antes de volver a ejecutar.

@@ -4,8 +4,6 @@ tags: [convenciones, guidelines, ansible, docker]
 
 # Convenciones del Proyecto
 
-Reglas y estándares definidos en `.continue/rules/context.md`.
-
 ## Estructura de directorios
 
 Los playbooks se organizan por funcionalidad dentro de `ubu2404/`:
@@ -13,7 +11,8 @@ Los playbooks se organizan por funcionalidad dentro de `ubu2404/`:
 ```
 ubu2404/
 ├── {servicio}/
-│   ├── {servicio}.yml          ← playbook principal
+│   ├── {servicio}.yml          ← despliegue inicial
+│   ├── update-{servicio}.yml   ← actualización de imágenes
 │   └── opt/docker/{servicio}/
 │       ├── compose.yml         ← definición del stack
 │       └── do.sh               ← script de gestión
@@ -80,3 +79,32 @@ Las variables sensibles (passwords, tokens) se definen en archivos `.env` junto 
 ## Timezone
 
 Todos los servicios usan: `America/Argentina/Buenos_Aires`
+
+## Playbooks de actualización
+
+Todo servicio con contenedores Docker debe incluir un `update-{servicio}.yml` junto al playbook principal. Usar `utils/update-template.yml` como punto de partida.
+
+### Flujo obligatorio
+
+| Paso | Acción |
+|---|---|
+| 1 | Log de versiones previas |
+| 2 | Copiar `compose.yml` actualizado (`backup: yes`) |
+| 3 | Etiquetar imágenes actuales como `:_rollback` |
+| 4 | `systemctl stop` — respeta hooks de ExecStop |
+| 5 | `docker_compose_v2_pull` — pull de nuevas imágenes |
+| 6 | `systemctl start` — respeta hooks de ExecStartPre |
+| 7 | **Verificación genérica**: todos los contenedores en estado `running` |
+| 8 | Verificaciones específicas del servicio (puerto, API, DNS…) — opcionales |
+| 9 | Log de versiones nuevas |
+| rescue | Restaurar `compose.yml` + imágenes `:_rollback` + reiniciar + fail |
+
+### Por qué systemctl y no docker compose directamente
+
+`systemctl stop/start` garantiza que se ejecuten los hooks `ExecStartPre` y `ExecStop` de la unit (sincronización de datos, etc.) y que el estado de systemd quede consistente con la realidad.
+
+### Cron job de actualización
+
+Todo servicio con `update-{servicio}.yml` debe incluir también un `cron-update-{servicio}.yml` que instale el cron job en localhost. Usar `ubu2404/collabora/cron-update-collabora.yml` como referencia.
+
+**Agregar una fila en [[Playbooks/Actualizaciones Automáticas]]** con el horario, el cron file y el log. Escalonar los horarios para que no coincidan con otros servicios.

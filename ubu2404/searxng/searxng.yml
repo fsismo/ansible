@@ -1,0 +1,62 @@
+- hosts: rbpi4001.sismonda.local
+  become: yes
+
+  vars:
+    searxng_docker_dir: /opt/docker/searxng
+    searxng_data_dir: /var/docker/searxng
+    searxng_service_name: searxng
+    searxng_compose_file: "{{ searxng_docker_dir }}/compose.yml"
+    searxng_do_sh_file: "{{ searxng_docker_dir }}/do.sh"
+    searxng_service_file: "/etc/systemd/system/{{ searxng_service_name }}.service"
+
+  tasks:
+  - name: Create SearxNG Docker directory
+    file:
+      path: "{{ searxng_docker_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Create SearxNG data directory
+    file:
+      path: "{{ searxng_data_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Copy Compose file
+    template:
+      src: opt/docker/searxng/compose.yml
+      dest: "{{ searxng_compose_file }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copy do.sh script
+    template:
+      src: opt/docker/searxng/do.sh
+      dest: "{{ searxng_do_sh_file }}"
+      owner: root
+      group: root
+      mode: 0740
+      backup: yes
+
+  - name: Copy systemd service file
+    template:
+      src: etc/systemd/system/searxng.service
+      dest: "{{ searxng_service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Enable and start SearxNG service
+    systemd:
+      name: "{{ searxng_service_name }}"
+      state: started
+      daemon_reload: yes
+      enabled: yes
+

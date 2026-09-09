@@ -2,7 +2,7 @@
 
 # Check if at least one parameter is provided
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 {update|ncld-upgrade|ncld-maintenance-off|ncld-maintenance-on}"
+    echo "Usage: $0 {update|ncld-upgrade|ncld-maintenance-off|ncld-maintenance-on|ncld-add-missing-indices}"
     exit 1
 fi
 
@@ -14,10 +14,10 @@ check_docker_compose() {
     fi
 }
 
-# Function to check if docker-compose.yml exists
+# Function to check if compose.yml exists
 check_docker_compose_file() {
-    if [ ! -f docker-compose.yml ]; then
-        echo "docker-compose.yml file not found in the current directory."
+    if [ ! -f compose.yml ]; then
+        echo "compose.yml file not found in the current directory."
         exit 1
     fi
 }
@@ -26,41 +26,54 @@ check_docker_compose_file() {
 for param in "$@"; do
     case $param in
         update)
-            # Check for Docker Compose and docker-compose.yml
+            # Check for Docker Compose and compose.yml
             check_docker_compose
             check_docker_compose_file
 
             # Pull the latest images and restart containers with a 2-second wait time
-            echo "Upgrading the dockers..."
+            echo "Pulling the latest images..."
             docker compose pull
-            docker compose up -d --force-recreate
+            echo "Stopping containers..."
+            docker compose down
+            sleep 2
+            echo "Starting containers..."
+            docker compose up -d
             ;;
         ncld-upgrade)
-            # Check for Docker Compose and docker-compose.yml
+            # Check for Docker Compose and compose.yml
             check_docker_compose
             check_docker_compose_file
 
             # Execute the upgrade command
             echo "Executing NC LD Upgrade..."
-            docker exec -i -u 33 ext-www_nextcloud_1 php /var/www/html/updater/updater.phar
+            docker exec -i -u 33 ext-www-nextcloud-1 php /var/www/html/updater/updater.phar
             ;;
         ncld-maintenance-off)
-            # Check for Docker Compose and docker-compose.yml
+            # Check for Docker Compose and compose.yml
             check_docker_compose
             check_docker_compose_file
 
             # Execute the maintenance off command
             echo "Turning off NC LD Maintenance..."
-            docker exec -i -u 33 ext-www_nextcloud_1 php /var/www/html/occ maintenance:mode --off
+            docker exec -i -u 33 ext-www-nextcloud-1 php /var/www/html/occ maintenance:mode --off
             ;;
         ncld-maintenance-on)
-            # Check for Docker Compose and docker-compose.yml
+            # Check for Docker Compose and compose.yml
             check_docker_compose
             check_docker_compose_file
 
             # Execute the maintenance on command
             echo "Turning on NC LD Maintenance..."
-            docker exec -i -u 33 ext-www_nextcloud_1 php /var/www/html/occ maintenance:mode --on
+            docker exec -i -u 33 ext-www-nextcloud-1 php /var/www/html/occ maintenance:mode --on
+            ;;
+        ncld-add-missing-indices)
+            # Check for Docker Compose and compose.yml
+            check_docker_compose
+            check_docker_compose_file
+
+            # Execute the add missing indices command
+            echo "Adding missing database indices in NC LD..."
+            docker exec -i -u 33 ext-www-nextcloud-1 php /var/www/html/occ db:add-missing-indices
             ;;
         *)
             echo "Unknown parameter: $param"
