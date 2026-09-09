@@ -1,0 +1,94 @@
+# Despliega Immich y lo pone bajo gestión de systemd.
+# Requiere que /opt/docker/immich/.env ya exista (contiene secretos, no se commitea).
+# Ver obsidian/Services/Immich.md para las variables requeridas.
+---
+- hosts: alphaprime.sismonda.local
+  become: yes
+
+  vars:
+    servicio: immich
+    compose_dir: /opt/docker/{{ servicio }}
+    compose_path: "{{ compose_dir }}/compose.yml"
+    service_file: /etc/systemd/system/{{ servicio }}.service
+
+  tasks:
+  - name: Crear directorio {{ compose_dir }}
+    file:
+      path: "{{ compose_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Verificar que existe .env
+    stat:
+      path: "{{ compose_dir }}/.env"
+    register: immich_env_file
+
+  - name: Abortar si falta .env
+    fail:
+      msg: >
+        {{ compose_dir }}/.env no existe. Crearlo manualmente antes de correr este playbook
+        (ver obsidian/Services/Immich.md para las variables requeridas) — no se commitea al repo.
+    when: not immich_env_file.stat.exists
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/immich/compose.yml
+      dest: "{{ compose_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+    notify: Reiniciar immich
+
+  - name: Copiar hwaccel.transcoding.yml
+    template:
+      src: opt/docker/immich/hwaccel.transcoding.yml
+      dest: "{{ compose_dir }}/hwaccel.transcoding.yml"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+    notify: Reiniciar immich
+
+  - name: Copiar hwaccel.ml.yml
+    template:
+      src: opt/docker/immich/hwaccel.ml.yml
+      dest: "{{ compose_dir }}/hwaccel.ml.yml"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+    notify: Reiniciar immich
+
+  - name: Copiar do.sh
+    template:
+      src: opt/docker/immich/do.sh
+      dest: "{{ compose_dir }}/do.sh"
+      owner: root
+      group: root
+      mode: 0750
+      backup: yes
+
+  - name: Copiar immich.service
+    template:
+      src: etc/systemd/system/immich.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Habilitar e iniciar immich.service
+    systemd:
+      name: "{{ servicio }}.service"
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  handlers:
+  - name: Reiniciar immich
+    systemd:
+      name: immich.service
+      state: restarted
