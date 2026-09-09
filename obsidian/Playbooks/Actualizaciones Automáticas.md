@@ -31,7 +31,7 @@ Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de 
 | Collabora | `ubu2404/collabora/` | `update-collabora.yml` | `cron-update-collabora.yml` |
 | Hermes Agent | `ubu2404/hermes-agent/` | `update-hermes-agent.yml` | `cron-update-hermes-agent.yml` |
 | Torrents | `ubu2404/torrents/` | `update-torrents.yml` | `cron-update-torrents.yml` |
-| AudioBookShelf | `ubu2404/audiobookshelf/` | `update-audiobookshelf.yml` | `cron-update-audiobookshelf.yml` |
+| AudioBookShelf | `ubu2404/ext-www/` | `update-audiobookshelf.yml` | `cron-update-audiobookshelf.yml` |
 | n8n | `ubu2404/n8n/` | `update-n8n.yml` | `cron-update-n8n.yml` |
 
 ## Aplicar un cron job

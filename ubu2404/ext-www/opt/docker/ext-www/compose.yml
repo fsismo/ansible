@@ -77,6 +77,7 @@ services:
       #- REDIS_PASSWORD=my-password
       - REDIS_PORT=6379
       - REDIS_DATABASES=16
+      - TZ="America/Argentina/Buenos_Aires"
     networks:
       containers:
         ipv4_address: 172.31.0.21
@@ -109,14 +110,28 @@ services:
       containers:
         ipv4_address: 172.31.0.23
 
+  audiobookshelf:
+    image: 'ghcr.io/advplyr/audiobookshelf:2.36.0'
+    restart: unless-stopped
+    user: "1000:1000"
+    volumes:
+      - /var/docker-data/ext-www/audiobookshelf/config:/config
+      - /var/docker-data/ext-www/audiobookshelf/metadata:/metadata
+      - /mnt/storage/Downloads/AudioLibros:/audiobooks
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+    networks:
+      containers:
+        ipv4_address: 172.31.0.24
+
   smtp:
-    #image: 'fsismo/ubuntu-24.04-postfix-smtp-relay:latest'
-    image: 'fsismo/ubuntu-24.04-postfix-smtp:latest'
+    image: 'fsismo/ubuntu-24.04-postfix-smtp-relay:latest'
+    #image: 'fsismo/ubuntu-24.04-postfix-smtp:latest'
     restart: unless-stopped
     dns:
+      - 10.0.0.41
       - 10.0.0.42
-      - 10.0.0.43
-      - 10.0.0.44
+      - 10.0.0.51
     ports:
       - '25:25'
     environment:
@@ -133,3 +148,15 @@ services:
     networks:
       containers:
         ipv4_address: 172.31.0.254
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      containers:
+        ipv4_address: 172.31.0.12
+    depends_on:
+      - npm
