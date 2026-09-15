@@ -36,6 +36,8 @@ Archivo de inventario: `hosts`
 
 - `rbpi4001.sismonda.local`
 - `rbpi4002.sismonda.local`
+- `rbpi4003.sismonda.local` — incorporado 2026-09-15, Ubuntu 26.04, sin servicio asignado todavía
+- `rbpi4004.sismonda.local` — incorporado 2026-09-15, Ubuntu 26.04, sin servicio asignado todavía
 
 ### `[rbpi5]` — Raspberry Pi 5
 

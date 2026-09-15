@@ -19,8 +19,8 @@
 [rbpi4]
 	rbpi4001.sismonda.local		ansible_python_interpreter=/usr/bin/python3
 	rbpi4002.sismonda.local		ansible_python_interpreter=/usr/bin/python3
-#	rbpi4003.sismonda.local		ansible_python_interpreter=/usr/bin/python3
-#	rbpi4004.sismonda.local		ansible_python_interpreter=/usr/bin/python3
+	rbpi4003.sismonda.local		ansible_python_interpreter=/usr/bin/python3
+	rbpi4004.sismonda.local		ansible_python_interpreter=/usr/bin/python3
 #	rbpi4005.sismonda.local
 #	rbpi4006.sismonda.local
 #	rbpi-sandbox.sismonda.local	
