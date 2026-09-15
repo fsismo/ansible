@@ -73,5 +73,7 @@ Cada servicio mantiene sus datos en el host local bajo `/var/docker-data/`:
 │   ├── nextcloud/
 │   ├── wordpress/
 │   └── audiobookshelf/
-└── zot/                    ← Zot OCI Registry — blobs y manifests (rbpi4002)
+├── zot/                    ← Zot OCI Registry — blobs y manifests (rbpi4002)
+└── ianews-scraper/         ← salida del scraper (JSON por nota, dedup) (rbpi4004)
+    └── output/
 ```

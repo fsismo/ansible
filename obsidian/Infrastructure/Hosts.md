@@ -37,7 +37,7 @@ Archivo de inventario: `hosts`
 - `rbpi4001.sismonda.local`
 - `rbpi4002.sismonda.local`
 - `rbpi4003.sismonda.local` — incorporado 2026-09-15, Ubuntu 26.04, sin servicio asignado todavía
-- `rbpi4004.sismonda.local` — incorporado 2026-09-15, Ubuntu 26.04, sin servicio asignado todavía
+- `rbpi4004.sismonda.local` — incorporado 2026-09-15, Ubuntu 26.04. Corre [[../Services/Ianews-Scraper|Ianews — Scraper]]
 
 ### `[rbpi5]` — Raspberry Pi 5
 
@@ -64,6 +64,7 @@ rbpi4002          → Pi-Hole+WireGuard (replica), Zot Registry (OCI)
 rbpi5001          → Nginx Proxy Manager, Pi-Hole+WireGuard, Torrents (Arr)
 rbpi5002          → Nextcloud, WordPress, MariaDB, NPM, AudioBookShelf
 rbpi3-001         → DNS (Pi-Hole standalone)
+rbpi4004          → Ianews Scraper
 alphaprime-dev    → Syncthing, Minecraft
 ```
 

@@ -31,6 +31,7 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 | [[Services/AudioBookShelf\|AudioBookShelf]] | rbpi5002 | Servidor de audiolibros |
 | [[Services/n8n\|n8n]] | alphaprime | Automatización de workflows |
 | [[Services/Zot\|Zot Registry]] | rbpi4002 | Registro OCI privado de contenedores |
+| [[Services/Ianews-Scraper\|Ianews — Scraper]] | rbpi4004 | Scraping de noticias (pieza del proyecto ianews) |
 
 ### Playbooks
 - [[Playbooks/Setup Base|Setup Base]] — herramientas comunes, Docker, NFS
