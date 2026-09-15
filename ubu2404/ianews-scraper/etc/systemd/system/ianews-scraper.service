@@ -6,7 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/docker/ianews-scraper
+WorkingDirectory={{ compose_dir }}
 ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm scraper
 TimeoutStartSec=0
 

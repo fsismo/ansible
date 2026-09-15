@@ -11,11 +11,13 @@
   serial: 1
 
   vars:
-    servicio: ianews-scraper
-    compose_dir: /opt/docker/{{ servicio }}
+    proyecto: ianews
+    pieza: scraper
+    unit_name: "{{ proyecto }}-{{ pieza }}"
+    compose_dir: /opt/docker/{{ proyecto }}
     compose_path: "{{ compose_dir }}/compose.yml"
-    log_file: /var/log/ansible-update-{{ servicio }}.log
-    last_run_file: /var/docker-data/{{ servicio }}/output/.last_run.json
+    log_file: /var/log/ansible-update-{{ unit_name }}.log
+    last_run_file: /var/docker-data/{{ proyecto }}/{{ pieza }}/output/.last_run.json
 
   tasks:
 
@@ -31,7 +33,7 @@
 
     - name: Copiar compose.yml actualizado
       template:
-        src: /mnt/storage/ansible/ubu2404/{{ servicio }}/opt/docker/{{ servicio }}/compose.yml
+        src: /mnt/storage/ansible/ubu2404/{{ proyecto }}-{{ pieza }}/opt/docker/{{ proyecto }}-{{ pieza }}/compose.yml
         dest: "{{ compose_path }}"
         owner: root
         group: root
@@ -59,7 +61,7 @@
 
     - name: Disparar una corrida real como verificación
       systemd:
-        name: "{{ servicio }}.service"
+        name: "{{ unit_name }}.service"
         state: started
 
     - name: Verificar que la corrida no reportó errores
@@ -96,7 +98,7 @@
 
     - name: "[ROLLBACK] Corrida de verificación con la imagen anterior"
       systemd:
-        name: "{{ servicio }}.service"
+        name: "{{ unit_name }}.service"
         state: started
 
     - name: "[ROLLBACK] Abortar con error tras revertir"

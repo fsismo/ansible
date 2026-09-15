@@ -23,8 +23,8 @@ despliegue (imagen, env vars, volúmenes) vive en el repo de la app
 | Playbook de despliegue | `ubu2404/ianews-scraper/ianews-scraper.yml` |
 | Playbook de actualización | `ubu2404/ianews-scraper/update-ianews-scraper.yml` |
 | Cron de actualización | `ubu2404/ianews-scraper/cron-update-ianews-scraper.yml` |
-| Compose path | `/opt/docker/ianews-scraper/compose.yml` + `compose.override.yml` |
-| Gestión | `/opt/docker/ianews-scraper/do.sh` |
+| Compose path | `/opt/docker/ianews/compose.yml` + `compose.override.yml` |
+| Gestión | `/opt/docker/ianews/do.sh` |
 
 **No es un servicio persistente**: el `ENTRYPOINT` del contenedor corre
 `python main.py run` una vez y termina. No se levanta con `docker compose up`,
@@ -37,12 +37,24 @@ se invoca con `docker compose run --rm scraper` vía un **systemd timer**
 El `docker-compose.yml` de ianews espera correr desde la raíz de ese repo
 (monta `./scraper/output` relativo). Para no clonar el repo entero en la Pi
 (y tener que mantenerlo actualizado ahí), se copió el `docker-compose.yml`
-**literalmente** a `/opt/docker/ianews-scraper/compose.yml` (no se edita a
-mano — si el contrato cambia del lado de ianews, hay que volver a copiarlo) y
-se agregó un `compose.override.yml` propio de este repo que remapea el único
-volumen a storage persistente del host, siguiendo la convención de
-`/var/docker-data/{servicio}/` del resto de los roles. `docker compose` lo
-mergea automático por estar en el mismo directorio.
+**literalmente** a `/opt/docker/ianews/compose.yml` (no se edita a mano — si
+el contrato cambia del lado de ianews, hay que volver a copiarlo) y se agregó
+un `compose.override.yml` propio de este repo que remapea el único volumen a
+storage persistente del host. `docker compose` lo mergea automático por estar
+en el mismo directorio.
+
+## Por qué `/opt/docker/ianews` y no `/opt/docker/ianews-scraper`
+
+El `docker-compose.yml` de ianews es único para todo el proyecto (hoy solo
+`scraper`; `processor`/`builder`/`publisher` se van a sumar ahí mismo a
+medida que existan, ver `wiki/Arquitectura.md` del repo ianews). Por eso
+`/opt/docker/ianews/` y `/var/docker-data/ianews/` son compartidos entre
+piezas — **no** uno por pieza como el resto de los servicios de este repo.
+Cada pieza sí tiene su propio systemd unit (`ianews-{pieza}.service/.timer`)
+y su propio subdirectorio de datos (`/var/docker-data/ianews/{pieza}/`).
+Se renombró desde `ianews-scraper` el 2026-09-15, antes de que hubiera otras
+piezas desplegadas (sin impacto en datos: se migró `output/` preservando el
+dedup).
 
 ## Puertos expuestos
 
@@ -52,7 +64,7 @@ Ninguno — no es un servicio de red, solo hace requests salientes.
 
 | Volumen | Contenedor | Host |
 |---|---|---|
-| Salida del scraper (JSON por nota, dedup) | `/app/output` | `/var/docker-data/ianews-scraper/output` |
+| Salida del scraper (JSON por nota, dedup) | `/app/output` | `/var/docker-data/ianews/scraper/output` |
 
 `output/.last_run.json` tiene el resultado de la última corrida
 (`nuevos`/`actualizados`/`sin_cambios`/`ya_estaban`/`errores`) — ver

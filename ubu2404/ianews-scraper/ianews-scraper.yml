@@ -11,6 +11,11 @@
 # del contrato + compose.override.yml propio para remapear el volumen de
 # salida a storage del host (ver ese archivo).
 #
+# /opt/docker/ianews y /var/docker-data/ianews son compartidos con el resto
+# de las piezas de ianews a medida que se agreguen al mismo compose.yml
+# (processor, builder, publisher) — cada una con su propio systemd
+# unit (ianews-{pieza}.service/.timer), no un directorio nuevo.
+#
 # Requisito previo (correr antes, una vez): el host tiene que confiar en la
 # CA del registry privado (pull anónimo, pero TLS igual):
 #   ansible-playbook -i hosts utils/local-ca/local-ca.yml --limit rbpi4004.sismonda.local
@@ -19,14 +24,16 @@
   become: yes
 
   vars:
-    servicio: ianews-scraper
-    compose_dir: /opt/docker/{{ servicio }}
+    proyecto: ianews
+    pieza: scraper
+    unit_name: "{{ proyecto }}-{{ pieza }}"
+    compose_dir: /opt/docker/{{ proyecto }}
     compose_path: "{{ compose_dir }}/compose.yml"
     override_path: "{{ compose_dir }}/compose.override.yml"
     env_path: "{{ compose_dir }}/.env"
-    data_dir: /var/docker-data/{{ servicio }}/output
-    service_file: /etc/systemd/system/{{ servicio }}.service
-    timer_file: /etc/systemd/system/{{ servicio }}.timer
+    data_dir: /var/docker-data/{{ proyecto }}/{{ pieza }}/output
+    service_file: /etc/systemd/system/{{ unit_name }}.service
+    timer_file: /etc/systemd/system/{{ unit_name }}.timer
 
     # Valores de producción para .env — mismos que /mnt/storage/Code/ianews/.env
     # (no .env.example): UA de navegador, no de bot, porque varios medios
@@ -114,15 +121,15 @@
     systemd:
       daemon_reload: yes
 
-  - name: Habilitar e iniciar ianews-scraper.timer
+  - name: Habilitar e iniciar {{ unit_name }}.timer
     systemd:
-      name: ianews-scraper.timer
+      name: "{{ unit_name }}.timer"
       state: started
       enabled: yes
 
   - name: Disparar una corrida de prueba
     systemd:
-      name: ianews-scraper.service
+      name: "{{ unit_name }}.service"
       state: started
 
   - name: Verificar que se generó .last_run.json
