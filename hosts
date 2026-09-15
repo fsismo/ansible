@@ -1,5 +1,5 @@
 [servidores]
-	alphaprime.sismonda.local	ansible_python_interpreter=/usr/bin/python3
+	alphaprime.sismonda.local	ansible_connection=local	ansible_python_interpreter=/usr/bin/python3
 #	alphaprime-dev.sismonda.local	ansible_python_interpreter=/usr/bin/python3		
 #	blackmamba.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 #	sandbox.sismonda.local		ansible_python_interpreter=/usr/bin/python3
@@ -11,7 +11,7 @@
 	rbpi5002.sismonda.local		ansible_python_interpreter=/usr/bin/python3
 
 [rbpi3]
-	rbpi3-001.sismonda.local	ansible_connection=local	ansible_python_interpreter=/usr/bin/python3
+	rbpi3-001.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 #	rbpi3-002.sismonda.local
 #	rbpi3-003.sismonda.local
 #	rbpi3-004.sismonda.local

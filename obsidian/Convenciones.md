@@ -108,3 +108,22 @@ Todo servicio con contenedores Docker debe incluir un `update-{servicio}.yml` ju
 Todo servicio con `update-{servicio}.yml` debe incluir también un `cron-update-{servicio}.yml` que instale el cron job en localhost. Usar `ubu2404/collabora/cron-update-collabora.yml` como referencia.
 
 **Agregar una fila en [[Playbooks/Actualizaciones Automáticas]]** con el horario, el cron file y el log. Escalonar los horarios para que no coincidan con otros servicios.
+
+## Ansible — blocking IO
+
+Al correr `ansible`/`ansible-playbook` desde una sesión con stdin/stdout no bloqueantes (algunas shells interactivas, wrappers) puede aparecer:
+
+```
+ERROR: Ansible requires blocking IO on stdin/stdout/stderr. Non-blocking file handles detected: <stdout>, <stderr>
+```
+
+Workaround: forzar blocking IO en los fds antes de invocar el comando, por ejemplo:
+
+```python
+import os
+for fd in (0, 1, 2):
+    os.set_blocking(fd, True)
+os.execvp('ansible-playbook', ['ansible-playbook', '-i', 'hosts', 'playbook.yml'])
+```
+
+No correr varios `ansible-playbook` en paralelo en la misma sesión — puede reproducir el mismo error.

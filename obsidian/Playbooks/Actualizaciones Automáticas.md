@@ -6,6 +6,8 @@ tags: [playbooks, actualizaciones, cron, docker]
 
 Cada servicio con contenedores Docker tiene un playbook `update-{servicio}.yml` con rollback automático, y un `cron-update-{servicio}.yml` que instala el cron job en localhost.
 
+`localhost` es el **nodo de control Ansible** (ver [[../Infrastructure/Hosts#Configuración Ansible|Hosts → Configuración Ansible]]): `alphaprime.sismonda.local` desde el 2026-09-15 (antes era `rbpi3-001`). Los cron jobs corren ahí, como usuario `ansible`.
+
 ## Flujo general
 
 Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de actualización]] para el detalle completo del flujo (log previo, tag rollback, pull, verificación, log posterior, rescue).

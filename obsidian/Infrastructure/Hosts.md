@@ -12,7 +12,7 @@ Archivo de inventario: `hosts`
 
 | Host | Estado | Notas |
 |---|---|---|
-| `alphaprime.sismonda.local` | ✅ Activo | Servidor principal (GPU AMD) |
+| `alphaprime.sismonda.local` | ✅ Activo | Servidor principal (GPU AMD). **Nodo de control Ansible** (`ansible_connection=local`) |
 | `alphaprime-dev.sismonda.local` | 💤 Comentado | Dev / staging |
 | `blackmamba.sismonda.local` | 💤 Comentado | — |
 | `sandbox.sismonda.local` | 💤 Comentado | — |
@@ -30,7 +30,7 @@ Archivo de inventario: `hosts`
 
 | Host | Conexión |
 |---|---|
-| `rbpi3-001.sismonda.local` | `ansible_connection=local` |
+| `rbpi3-001.sismonda.local` | SSH normal (host gestionado, ya no es el nodo de control) |
 
 ### `[rbpi4]` — Raspberry Pi 4
 
@@ -67,12 +67,22 @@ alphaprime-dev    → Syncthing, Minecraft
 
 ## Configuración Ansible
 
-Archivo: `ansible.cfg`
+**Nodo de control:** `alphaprime.sismonda.local` (migrado desde `rbpi3-001` el 2026-09-15).
+El repo vive en `/mnt/storage/ansible`, montado por NFS y visible igual en todos los hosts,
+así que no hace falta clonar nada al migrar el control node — solo mover credenciales y cron jobs.
 
-```ini
-[defaults]
-inventory = hosts
-remote_user = ubuntu          # usuario SSH
-host_key_checking = False
-roles_path = roles/
+**Usuario:** todos los playbooks se ejecutan como el usuario de sistema `ansible`
+(uid propio, `sudo NOPASSWD: ALL` vía `/etc/sudoers.d/ansible`) en cada host, incluido el
+nodo de control. `ansible@alphaprime` tiene un par de claves SSH propio (`~ansible/.ssh/id_ed25519`)
+autorizado en el `authorized_keys` de `ansible` en el resto de los hosts.
+
+```bash
+sudo -u ansible ansible-playbook -i hosts <playbook>
 ```
+
+`ansible.cfg` está deshabilitado (es el ejemplo comentado que genera `ansible-config init --disabled`),
+por lo que no hay `remote_user` configurado: Ansible se conecta con el mismo usuario que ejecuta el
+comando, de ahí que todo corra como `ansible`.
+
+> Nota: en esta shell puede aparecer `ERROR: Ansible requires blocking IO...` — ver
+> [[../Convenciones#Ansible — blocking IO|Convenciones]] para el workaround (`os.set_blocking`).
