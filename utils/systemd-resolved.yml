@@ -9,7 +9,7 @@
   tasks:
   - name: Copiar resolved.conf
     template:
-      src: /etc/ansible/utils/systemd/resolved.conf
+      src: /mnt/storage/ansible/utils/systemd/resolved.conf
       dest: /etc/systemd/resolved.conf
       owner: root
       group: root
