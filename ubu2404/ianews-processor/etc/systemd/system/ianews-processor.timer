@@ -1,0 +1,12 @@
+[Unit]
+Description=Timer para ianews processor (cada hora, 20' despues del scraper)
+Requires=ianews-processor.service
+
+[Timer]
+Unit=ianews-processor.service
+OnCalendar=*-*-* *:20:00
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

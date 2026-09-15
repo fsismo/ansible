@@ -1,13 +1,9 @@
-# Actualiza la imagen de ianews-scraper y valida con una corrida real.
-# Adaptado del flujo genérico (utils/update-template.yml): no hay contenedor
-# persistente que parar/arrancar, así que "arrancar el servicio" acá dispara
-# una corrida real (systemctl start de un oneshot) que sirve de verificación
-# end-to-end, y se chequea el contador "errores" de .last_run.json en vez de
-# "todos los contenedores running".
+# Actualiza la imagen de ianews-processor y valida con una corrida real.
+# Mismo criterio adaptado que update-ianews-scraper.yml: sin contenedor
+# persistente, "arrancar" dispara una corrida real de verificación.
 #
-# compose.yml es compartido con processor (ver ubu2404/ianews-processor/):
-# todas las operaciones de pull/tag/rollback van scoped a "{{ pieza }}" para
-# no tocar la imagen de la otra pieza.
+# compose.yml es compartido con scraper: todas las operaciones de
+# pull/tag/rollback van scoped a "{{ pieza }}".
 ---
 - hosts: rbpi4004.sismonda.local
   become: yes
@@ -18,10 +14,10 @@
     - /mnt/storage/ansible/ubu2404/ianews/vars.yml
 
   vars:
-    pieza: scraper
+    pieza: processor
     unit_name: "{{ proyecto }}-{{ pieza }}"
     log_file: /var/log/ansible-update-{{ unit_name }}.log
-    last_run_file: "{{ scraper_output_dir }}/.last_run.json"
+    last_run_file: "{{ scraper_output_dir }}/.last_run_processor.json"
 
   tasks:
 

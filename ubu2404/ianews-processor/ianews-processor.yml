@@ -1,0 +1,121 @@
+# Despliega la pieza "processor" de ianews en rbpi4004 (extracción de
+# entidades vía Ollama, ver obsidian/Services/Ianews-Scraper.md y
+# wiki/Processor.md del repo ianews).
+#
+# Corrida única programada cada hora, 20' después de scraper.timer, para
+# darle tiempo a terminar una corrida completa antes de que processor lea
+# output/. No tiene datos propios: lee y reescribe in-place los JSON que
+# escribe el scraper (mismo volumen, ver compose.override.yml).
+#
+# Requiere que ianews-scraper.yml ya se haya corrido una vez (crea
+# /opt/docker/ianews, compose.yml, .env — recursos compartidos) y que el
+# host confíe en la CA del registry (ver ese playbook).
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+
+  vars:
+    pieza: processor
+    unit_name: "{{ proyecto }}-{{ pieza }}"
+    service_file: /etc/systemd/system/{{ unit_name }}.service
+    timer_file: /etc/systemd/system/{{ unit_name }}.timer
+
+  tasks:
+  - name: Include Docker Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio {{ compose_dir }}
+    file:
+      path: "{{ compose_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Copiar compose.yml
+    template:
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/compose.yml
+      dest: "{{ compose_path }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar compose.override.yml
+    template:
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/compose.override.yml
+      dest: "{{ override_path }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar .env
+    template:
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/env.j2
+      dest: "{{ env_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar do.sh
+    template:
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/do.sh
+      dest: "{{ do_sh_path }}"
+      owner: root
+      group: root
+      mode: 0750
+
+  - name: Copiar ianews-processor.service
+    template:
+      src: etc/systemd/system/ianews-processor.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar ianews-processor.timer
+    template:
+      src: etc/systemd/system/ianews-processor.timer
+      dest: "{{ timer_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: Habilitar e iniciar {{ unit_name }}.timer
+    systemd:
+      name: "{{ unit_name }}.timer"
+      state: started
+      enabled: yes
+
+  # No se aborta el deploy si esto no termina rápido: a diferencia del scraper
+  # (acotado por --max por feed), la primera corrida del processor procesa
+  # TODO el backlog acumulado de output/ sin "entidades" — puede haber
+  # cientos de notas viejas y tardar bastante (~8-15s por nota vía Ollama).
+  # Es un catch-up único; corridas siguientes son incrementales y rápidas.
+  - name: Disparar una corrida (puede tardar si hay backlog sin procesar)
+    systemd:
+      name: "{{ unit_name }}.service"
+      state: started
+
+  - name: Verificar que se generó .last_run_processor.json
+    stat:
+      path: "{{ scraper_output_dir }}/.last_run_processor.json"
+    register: ianews_processor_last_run
+
+  - name: Avisar si la corrida sigue en progreso (no es necesariamente un error)
+    debug:
+      msg: >
+        {{ scraper_output_dir }}/.last_run_processor.json todavía no existe —
+        probablemente sigue procesando el backlog. Verificar con
+        'journalctl -u {{ unit_name }}.service -f' o '{{ do_sh_path }} status'
+        antes de asumir que falló.
+    when: not ianews_processor_last_run.stat.exists

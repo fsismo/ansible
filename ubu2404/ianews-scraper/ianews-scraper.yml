@@ -11,10 +11,10 @@
 # del contrato + compose.override.yml propio para remapear el volumen de
 # salida a storage del host (ver ese archivo).
 #
-# /opt/docker/ianews y /var/docker-data/ianews son compartidos con el resto
-# de las piezas de ianews a medida que se agreguen al mismo compose.yml
-# (processor, builder, publisher) — cada una con su propio systemd
-# unit (ianews-{pieza}.service/.timer), no un directorio nuevo.
+# /opt/docker/ianews y el .env son compartidos con el resto de las piezas
+# (hoy también processor, ver ubu2404/ianews-processor/) — un solo
+# compose.yml/vars.yml en ubu2404/ianews/, cada pieza con su propio systemd
+# unit (ianews-{pieza}.service/.timer).
 #
 # Requisito previo (correr antes, una vez): el host tiene que confiar en la
 # CA del registry privado (pull anónimo, pero TLS igual):
@@ -23,28 +23,14 @@
 - hosts: rbpi4004.sismonda.local
   become: yes
 
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+
   vars:
-    proyecto: ianews
     pieza: scraper
     unit_name: "{{ proyecto }}-{{ pieza }}"
-    compose_dir: /opt/docker/{{ proyecto }}
-    compose_path: "{{ compose_dir }}/compose.yml"
-    override_path: "{{ compose_dir }}/compose.override.yml"
-    env_path: "{{ compose_dir }}/.env"
-    data_dir: /var/docker-data/{{ proyecto }}/{{ pieza }}/output
     service_file: /etc/systemd/system/{{ unit_name }}.service
     timer_file: /etc/systemd/system/{{ unit_name }}.timer
-
-    # Valores de producción para .env — mismos que /mnt/storage/Code/ianews/.env
-    # (no .env.example): UA de navegador, no de bot, porque varios medios
-    # bloquean/degradan clientes no-browser. Ver wiki/Decisiones.md de ese repo.
-    # Sin secretos, se pueden ajustar acá sin vault.
-    ianews_http_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ianews_http_request_timeout: 20
-    ianews_http_delay_seconds: 1.5
-    ianews_scraper_max_articles_per_feed: 25
-    ianews_scraper_output_dir: output
-    ianews_scraper_respect_robots: "true"
 
   tasks:
   - name: Include Docker Task
@@ -60,7 +46,7 @@
 
   - name: Crear directorio de salida (dedup persistente entre corridas)
     file:
-      path: "{{ data_dir }}"
+      path: "{{ scraper_output_dir }}"
       state: directory
       owner: "1000"
       group: "1000"
@@ -68,7 +54,7 @@
 
   - name: Copiar compose.yml
     template:
-      src: opt/docker/ianews-scraper/compose.yml
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/compose.yml
       dest: "{{ compose_path }}"
       owner: root
       group: root
@@ -77,7 +63,7 @@
 
   - name: Copiar compose.override.yml
     template:
-      src: opt/docker/ianews-scraper/compose.override.yml
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/compose.override.yml
       dest: "{{ override_path }}"
       owner: root
       group: root
@@ -86,7 +72,7 @@
 
   - name: Copiar .env
     template:
-      src: opt/docker/ianews-scraper/env.j2
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/env.j2
       dest: "{{ env_path }}"
       owner: root
       group: root
@@ -95,8 +81,8 @@
 
   - name: Copiar do.sh
     template:
-      src: opt/docker/ianews-scraper/do.sh
-      dest: "{{ compose_dir }}/do.sh"
+      src: /mnt/storage/ansible/ubu2404/ianews/opt/docker/ianews/do.sh
+      dest: "{{ do_sh_path }}"
       owner: root
       group: root
       mode: 0750
@@ -134,10 +120,10 @@
 
   - name: Verificar que se generó .last_run.json
     stat:
-      path: "{{ data_dir }}/.last_run.json"
+      path: "{{ scraper_output_dir }}/.last_run.json"
     register: ianews_last_run
 
   - name: Abortar si la corrida de prueba no generó .last_run.json
     fail:
-      msg: "La corrida de prueba no dejó {{ data_dir }}/.last_run.json — revisar journalctl -u ianews-scraper.service"
+      msg: "La corrida de prueba no dejó {{ scraper_output_dir }}/.last_run.json — revisar journalctl -u {{ unit_name }}.service"
     when: not ianews_last_run.stat.exists

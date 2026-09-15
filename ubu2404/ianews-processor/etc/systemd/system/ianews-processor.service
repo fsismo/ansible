@@ -1,0 +1,14 @@
+[Unit]
+Description=ianews processor (corrida unica via docker compose run --rm)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{ compose_dir }}
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

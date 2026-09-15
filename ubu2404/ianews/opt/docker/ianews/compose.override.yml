@@ -3,7 +3,13 @@
 # solo vive compose.yml + .env, no el repo entero (no hay ./scraper/output
 # relativo al lado de este archivo). docker compose lo mergea automáticamente
 # por estar en el mismo directorio con el nombre compose.override.yml.
+#
+# processor apunta al mismo volumen que scraper: lee y reescribe esos JSON
+# in-place, no tiene salida propia (ver wiki/Modelo-de-datos.md del repo ianews).
 services:
   scraper:
     volumes:
-      - {{ data_dir }}:/app/output
+      - {{ scraper_output_dir }}:/app/output
+  processor:
+    volumes:
+      - {{ scraper_output_dir }}:/app/output

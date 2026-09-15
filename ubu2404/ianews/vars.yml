@@ -1,0 +1,38 @@
+# Vars compartidas entre las piezas de ianews (scraper, processor, ...).
+# Incluido con vars_files desde cada ubu2404/ianews-{pieza}/ianews-{pieza}.yml
+# y update-ianews-{pieza}.yml. Todas las piezas comparten un solo
+# /opt/docker/ianews/ (un solo compose.yml, un solo .env) — ver
+# obsidian/Services/Ianews-Scraper.md § Por qué /opt/docker/ianews.
+#
+# Si agregás una pieza nueva (builder, publisher) o una var de .env nueva,
+# actualizar acá — lo usan todas las piezas por igual.
+
+proyecto: ianews
+compose_dir: /opt/docker/{{ proyecto }}
+compose_path: "{{ compose_dir }}/compose.yml"
+override_path: "{{ compose_dir }}/compose.override.yml"
+env_path: "{{ compose_dir }}/.env"
+do_sh_path: "{{ compose_dir }}/do.sh"
+
+# Volumen de salida del scraper — el processor lee y reescribe esos mismos
+# JSON in-place, no tiene directorio propio.
+scraper_output_dir: /var/docker-data/{{ proyecto }}/scraper/output
+
+# ── .env compartido (env_file: .env en compose.yml, usado por ambos servicios) ──
+
+# Scraper — mismos valores que /mnt/storage/Code/ianews/.env (no .env.example):
+# UA de navegador, no de bot, porque varios medios bloquean/degradan clientes
+# no-browser. Sin secretos, se pueden ajustar acá sin vault.
+ianews_http_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+ianews_http_request_timeout: 20
+ianews_http_delay_seconds: 1.5
+ianews_scraper_max_articles_per_feed: 25
+ianews_scraper_output_dir: output
+ianews_scraper_respect_robots: "true"
+
+# Processor — Ollama corre en otro host (alphaprime), no en este compose: URL
+# de red, no nombre de servicio Docker.
+ianews_ollama_base_url: "http://alphaprime.sismonda.local:11434"
+ianews_ollama_model: "gemma4:26b-iq4xs"
+ianews_ollama_request_timeout: 120
+ianews_processor_data_dir: output

@@ -25,6 +25,7 @@ Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de 
 | AudioBookShelf | Domingos 22:45 | `/etc/cron.d/update-audiobookshelf` | `/var/log/ansible-update-audiobookshelf.log` |
 | n8n | Domingos 22:30 | `/etc/cron.d/update-n8n` | `/var/log/ansible-update-n8n.log` |
 | Ianews Scraper | Sábados 23:45 | `/etc/cron.d/update-ianews-scraper` | `/var/log/ansible-update-ianews-scraper.log` |
+| Ianews Processor | Sábados 23:15 | `/etc/cron.d/update-ianews-processor` | `/var/log/ansible-update-ianews-processor.log` |
 
 ## Playbooks
 
@@ -39,6 +40,7 @@ Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de 
 | AudioBookShelf | `ubu2404/ext-www/` | `update-audiobookshelf.yml` | `cron-update-audiobookshelf.yml` |
 | n8n | `ubu2404/n8n/` | `update-n8n.yml` | `cron-update-n8n.yml` |
 | Ianews Scraper | `ubu2404/ianews-scraper/` | `update-ianews-scraper.yml` | `cron-update-ianews-scraper.yml` |
+| Ianews Processor | `ubu2404/ianews-processor/` | `update-ianews-processor.yml` | `cron-update-ianews-processor.yml` |
 
 ## Aplicar un cron job
 

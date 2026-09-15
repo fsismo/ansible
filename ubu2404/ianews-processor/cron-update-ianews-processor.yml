@@ -1,0 +1,36 @@
+# Configura un cron job en localhost (nodo de control ansible) para ejecutar
+# update-ianews-processor.yml los sábados a las 23:15 y registrar la salida
+# en un log. No confundir con ianews-processor.timer (que corre el análisis
+# de entidades en sí cada hora, en rbpi4004): esto solo actualiza la imagen
+# semanalmente.
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  vars:
+    log_file: /var/log/ansible-update-ianews-processor.log
+    cron_file: /etc/cron.d/update-ianews-processor
+    playbook_cmd: >-
+      ansible-playbook -i /mnt/storage/ansible/hosts
+      /mnt/storage/ansible/ubu2404/ianews-processor/update-ianews-processor.yml
+
+  tasks:
+
+  - name: Crear archivo de log
+    file:
+      path: "{{ log_file }}"
+      state: touch
+      owner: ansible
+      group: ansible
+      mode: 0640
+
+  - name: Configurar cron job semanal (sábados 23:15)
+    copy:
+      dest: "{{ cron_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      content: |
+        # Ejecuta update-ianews-processor.yml cada sábado a las 23:15
+        15 23 * * 6 ansible {{ playbook_cmd }} >> {{ log_file }} 2>&1
