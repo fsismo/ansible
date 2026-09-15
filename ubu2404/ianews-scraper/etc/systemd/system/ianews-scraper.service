@@ -1,0 +1,14 @@
+[Unit]
+Description=ianews scraper (corrida unica via docker compose run --rm)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/docker/ianews-scraper
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm scraper
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

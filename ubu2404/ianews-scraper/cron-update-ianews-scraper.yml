@@ -1,0 +1,35 @@
+# Configura un cron job en localhost (nodo de control ansible) para ejecutar
+# update-ianews-scraper.yml los sábados a las 23:45 y registrar la salida en
+# un log. No confundir con ianews-scraper.timer (que corre el scraper en sí
+# cada 60 min, en rbpi4004): esto solo actualiza la imagen semanalmente.
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  vars:
+    log_file: /var/log/ansible-update-ianews-scraper.log
+    cron_file: /etc/cron.d/update-ianews-scraper
+    playbook_cmd: >-
+      ansible-playbook -i /mnt/storage/ansible/hosts
+      /mnt/storage/ansible/ubu2404/ianews-scraper/update-ianews-scraper.yml
+
+  tasks:
+
+  - name: Crear archivo de log
+    file:
+      path: "{{ log_file }}"
+      state: touch
+      owner: ansible
+      group: ansible
+      mode: 0640
+
+  - name: Configurar cron job semanal (sábados 23:45)
+    copy:
+      dest: "{{ cron_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      content: |
+        # Ejecuta update-ianews-scraper.yml cada sábado a las 23:45
+        45 23 * * 6 ansible {{ playbook_cmd }} >> {{ log_file }} 2>&1

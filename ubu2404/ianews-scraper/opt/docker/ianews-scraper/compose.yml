@@ -1,0 +1,19 @@
+# Copia literal del contrato de despliegue de /mnt/storage/Code/ianews/docker-compose.yml
+# (no se edita a mano acá — si cambia el contrato, volver a copiarlo desde ese repo).
+# El volumen de salida se remapea en compose.override.yml porque no clonamos el
+# repo de ianews en este host, solo este archivo + .env.
+#
+# El scraper es de corrida única (el ENTRYPOINT del Dockerfile corre
+# `python main.py run` y termina) — no se levanta con `up`, se invoca por
+# systemd timer con `docker compose run --rm scraper`. Ver
+# obsidian/Services/Ianews-Scraper.md.
+#
+# Imágenes: registry privado registry.sismonda.local:5000 (zot), publicadas
+# con ./dockerbuild.sh PUSH=1 desde /mnt/storage/Code/ianews.
+
+services:
+  scraper:
+    image: ${IANEWS_REGISTRY:-registry.sismonda.local:5000}/ianews-scraper:${IANEWS_SCRAPER_TAG:-latest}
+    env_file: .env
+    volumes:
+      - ./scraper/output:/app/output

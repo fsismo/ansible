@@ -1,0 +1,12 @@
+[Unit]
+Description=Timer para ianews scraper (cada 60 min)
+Requires=ianews-scraper.service
+
+[Timer]
+Unit=ianews-scraper.service
+OnCalendar=hourly
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

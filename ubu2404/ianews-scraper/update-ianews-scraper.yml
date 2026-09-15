@@ -1,0 +1,106 @@
+# Actualiza la imagen de ianews-scraper y valida con una corrida real.
+# Adaptado del flujo genérico (utils/update-template.yml): no hay contenedor
+# persistente que parar/arrancar, así que "arrancar el servicio" acá dispara
+# una corrida real (systemctl start de un oneshot) que sirve de verificación
+# end-to-end, y se chequea el contador "errores" de .last_run.json en vez de
+# "todos los contenedores running".
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+  any_errors_fatal: true
+  serial: 1
+
+  vars:
+    servicio: ianews-scraper
+    compose_dir: /opt/docker/{{ servicio }}
+    compose_path: "{{ compose_dir }}/compose.yml"
+    log_file: /var/log/ansible-update-{{ servicio }}.log
+    last_run_file: /var/docker-data/{{ servicio }}/output/.last_run.json
+
+  tasks:
+
+  - block:
+
+    - name: Registrar versiones previas al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update iniciado ===" >> {{ log_file }}
+        docker compose -f compose.yml -f compose.override.yml config --images >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Copiar compose.yml actualizado
+      template:
+        src: /mnt/storage/ansible/ubu2404/{{ servicio }}/opt/docker/{{ servicio }}/compose.yml
+        dest: "{{ compose_path }}"
+        owner: root
+        group: root
+        mode: 0644
+        backup: yes
+      register: compose_copy
+
+    - name: Etiquetar imagen actual como rollback
+      shell: |
+        docker compose -f compose.yml -f compose.override.yml config --images | while IFS= read -r image; do
+          id=$(docker inspect --format '{% raw %}{{.Id}}{% endraw %}' "$image" 2>/dev/null) || continue
+          docker tag "$id" "${image%%:*}:_rollback"
+        done
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+      register: tag_rollback
+
+    - name: Pull de la última imagen
+      community.docker.docker_compose_v2_pull:
+        project_src: "{{ compose_dir }}"
+        files:
+          - compose.yml
+          - compose.override.yml
+
+    - name: Disparar una corrida real como verificación
+      systemd:
+        name: "{{ servicio }}.service"
+        state: started
+
+    - name: Verificar que la corrida no reportó errores
+      shell: >-
+        python3 -c "import json,sys; d=json.load(open('{{ last_run_file }}'));
+        sys.exit('errores=%d en la corrida' % d['errores']) if d.get('errores') else None"
+      changed_when: false
+
+    - name: Registrar versiones posteriores al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update completado ===" >> {{ log_file }}
+        docker compose -f compose.yml -f compose.override.yml config --images >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    rescue:
+
+    - name: "[ROLLBACK] Restaurar compose anterior desde backup"
+      copy:
+        src: "{{ compose_copy.backup_file }}"
+        dest: "{{ compose_path }}"
+        remote_src: yes
+      when: compose_copy.backup_file is defined
+
+    - name: "[ROLLBACK] Restaurar imagen previa"
+      shell: |
+        docker compose -f compose.yml -f compose.override.yml config --images | while IFS= read -r image; do
+          docker tag "${image%%:*}:_rollback" "$image" 2>/dev/null || true
+        done
+      args:
+        chdir: "{{ compose_dir }}"
+      when: tag_rollback is defined and tag_rollback.rc == 0
+
+    - name: "[ROLLBACK] Corrida de verificación con la imagen anterior"
+      systemd:
+        name: "{{ servicio }}.service"
+        state: started
+
+    - name: "[ROLLBACK] Abortar con error tras revertir"
+      fail:
+        msg: >
+          La verificación falló. Se revirtió a la imagen anterior.
+          Revisá {{ log_file }} antes de volver a ejecutar.

@@ -1,0 +1,9 @@
+# Override de ansible (no forma parte del contrato de ianews): remapea el
+# volumen de salida del scraper a storage persistente del host, ya que acá
+# solo vive compose.yml + .env, no el repo entero (no hay ./scraper/output
+# relativo al lado de este archivo). docker compose lo mergea automáticamente
+# por estar en el mismo directorio con el nombre compose.override.yml.
+services:
+  scraper:
+    volumes:
+      - {{ data_dir }}:/app/output

@@ -1,0 +1,136 @@
+# Despliega la pieza "scraper" de ianews en rbpi4004.
+#
+# Es una corrida única (no un servicio persistente): el ENTRYPOINT del
+# Dockerfile corre `python main.py run` y termina, así que se programa cada
+# 60 min con un systemd timer que invoca `docker compose run --rm scraper`
+# (no `up`). Ver obsidian/Services/Ianews-Scraper.md.
+#
+# El contrato de despliegue (compose.yml, env vars, volúmenes) vive en el
+# repo /mnt/storage/Code/ianews (docker-compose.yml + wiki/) — no se edita
+# desde acá. No clonamos ese repo en la Pi: compose.yml es una copia literal
+# del contrato + compose.override.yml propio para remapear el volumen de
+# salida a storage del host (ver ese archivo).
+#
+# Requisito previo (correr antes, una vez): el host tiene que confiar en la
+# CA del registry privado (pull anónimo, pero TLS igual):
+#   ansible-playbook -i hosts utils/local-ca/local-ca.yml --limit rbpi4004.sismonda.local
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars:
+    servicio: ianews-scraper
+    compose_dir: /opt/docker/{{ servicio }}
+    compose_path: "{{ compose_dir }}/compose.yml"
+    override_path: "{{ compose_dir }}/compose.override.yml"
+    env_path: "{{ compose_dir }}/.env"
+    data_dir: /var/docker-data/{{ servicio }}/output
+    service_file: /etc/systemd/system/{{ servicio }}.service
+    timer_file: /etc/systemd/system/{{ servicio }}.timer
+
+    # Valores de producción para .env — mismos que /mnt/storage/Code/ianews/.env
+    # (no .env.example): UA de navegador, no de bot, porque varios medios
+    # bloquean/degradan clientes no-browser. Ver wiki/Decisiones.md de ese repo.
+    # Sin secretos, se pueden ajustar acá sin vault.
+    ianews_http_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ianews_http_request_timeout: 20
+    ianews_http_delay_seconds: 1.5
+    ianews_scraper_max_articles_per_feed: 25
+    ianews_scraper_output_dir: output
+    ianews_scraper_respect_robots: "true"
+
+  tasks:
+  - name: Include Docker Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio {{ compose_dir }}
+    file:
+      path: "{{ compose_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Crear directorio de salida (dedup persistente entre corridas)
+    file:
+      path: "{{ data_dir }}"
+      state: directory
+      owner: "1000"
+      group: "1000"
+      mode: 0755
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/ianews-scraper/compose.yml
+      dest: "{{ compose_path }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar compose.override.yml
+    template:
+      src: opt/docker/ianews-scraper/compose.override.yml
+      dest: "{{ override_path }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar .env
+    template:
+      src: opt/docker/ianews-scraper/env.j2
+      dest: "{{ env_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar do.sh
+    template:
+      src: opt/docker/ianews-scraper/do.sh
+      dest: "{{ compose_dir }}/do.sh"
+      owner: root
+      group: root
+      mode: 0750
+
+  - name: Copiar ianews-scraper.service
+    template:
+      src: etc/systemd/system/ianews-scraper.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar ianews-scraper.timer
+    template:
+      src: etc/systemd/system/ianews-scraper.timer
+      dest: "{{ timer_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: Habilitar e iniciar ianews-scraper.timer
+    systemd:
+      name: ianews-scraper.timer
+      state: started
+      enabled: yes
+
+  - name: Disparar una corrida de prueba
+    systemd:
+      name: ianews-scraper.service
+      state: started
+
+  - name: Verificar que se generó .last_run.json
+    stat:
+      path: "{{ data_dir }}/.last_run.json"
+    register: ianews_last_run
+
+  - name: Abortar si la corrida de prueba no generó .last_run.json
+    fail:
+      msg: "La corrida de prueba no dejó {{ data_dir }}/.last_run.json — revisar journalctl -u ianews-scraper.service"
+    when: not ianews_last_run.stat.exists
