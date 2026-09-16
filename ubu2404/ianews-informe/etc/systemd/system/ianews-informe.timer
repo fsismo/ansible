@@ -1,0 +1,14 @@
+[Unit]
+Description=Timer para ianews informe de URLs (cada 48h)
+Requires=ianews-informe.service
+
+[Timer]
+# Intervalo real (no calendario): 48h desde la última corrida, no un
+# horario fijo de reloj. OnBootSec cubre el caso de un host recién
+# reiniciado, sin esperar 48h para la primera corrida.
+OnBootSec=15min
+OnUnitActiveSec=48h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

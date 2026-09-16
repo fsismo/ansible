@@ -165,3 +165,31 @@ LAN, puerto `11434` expuesto a toda la interfaz).
   específico de esta pieza.
 - **Idempotente por presencia**, no por contenido: si una nota "vivo" se
   re-scrapea y cambia el `cuerpo`, el processor no la vuelve a analizar.
+
+---
+
+## Pieza: Informe de URLs
+
+No es una pieza del pipeline ni una imagen aparte — **reusa la imagen de
+`scraper`** (mismo `compose.yml`/`.env`/volumen), solo cambia el comando
+(`docker compose run --rm scraper informe-urls`; el `ENTRYPOINT` del
+Dockerfile es `python main.py`, así que el subcomando pisa el `CMD` por
+defecto `run`). Por eso su playbook (`ubu2404/ianews-informe/`) no toca
+compose/env/do.sh, asume que `ianews-scraper.yml` ya corrió antes.
+
+Poda `output/.urls_vistas.jsonl` (registro de auditoría de toda URL vista por
+el scraper, ver `/mnt/storage/Code/ianews/wiki/Scraper-Operacion.md#Informe
+de URLs (48h)`) a una ventana de 48h y arma un resumen con alerta si el dedup
+falló (misma URL guardada como "nuevo" más de una vez). Nació de una revisión
+manual de la corrida nocturna del 2026-09-16 que detectó que las exclusiones
+(loterías/cotización dólar-hoy) no quedaban logueadas en ningún lado.
+
+| | |
+|---|---|
+| Playbook de despliegue | `ubu2404/ianews-informe/ianews-informe.yml` |
+| Systemd | `ianews-informe.service` (`oneshot`, `docker compose run --rm scraper informe-urls`) + `ianews-informe.timer` (`OnUnitActiveSec=48h`, no calendario) |
+| Salida | `output/.informe_urls_48h.json` (mismo volumen que scraper) |
+
+Sin playbook de actualización propio: al no tener imagen propia, actualizar
+`scraper` (`update-ianews-scraper.yml`) ya trae el código de `informe-urls`
+al día.

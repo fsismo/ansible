@@ -1,0 +1,14 @@
+[Unit]
+Description=ianews informe de URLs vistas (poda + resumen ventana 48h)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{ compose_dir }}
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm scraper informe-urls
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

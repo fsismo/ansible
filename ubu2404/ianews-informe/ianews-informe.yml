@@ -1,0 +1,72 @@
+# Despliega el timer de "informe de URLs" de ianews en rbpi4004: poda
+# output/.urls_vistas.jsonl a la ventana de 48h y arma un resumen (conteo por
+# resultado/medio, alerta si una URL se reprocesó como "nuevo" más de una
+# vez). Ver wiki/Scraper-Operacion.md#Informe de URLs (48h) del repo ianews.
+#
+# No es una pieza nueva de compose ni una imagen aparte: reusa el servicio
+# "scraper" ya desplegado por ianews-scraper.yml (mismo compose.yml/.env/
+# volumen), solo cambia el comando (`informe-urls` en vez de `run`, el
+# ENTRYPOINT del Dockerfile es `python main.py`). Por eso este playbook no
+# toca compose.yml/.env/do.sh — asume que ianews-scraper.yml ya corrió antes
+# en este host.
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+
+  vars:
+    pieza: informe
+    unit_name: "{{ proyecto }}-{{ pieza }}"
+    service_file: /etc/systemd/system/{{ unit_name }}.service
+    timer_file: /etc/systemd/system/{{ unit_name }}.timer
+
+  tasks:
+  - name: Copiar ianews-informe.service
+    template:
+      src: etc/systemd/system/ianews-informe.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar ianews-informe.timer
+    template:
+      src: etc/systemd/system/ianews-informe.timer
+      dest: "{{ timer_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: Habilitar e iniciar {{ unit_name }}.timer
+    systemd:
+      name: "{{ unit_name }}.timer"
+      state: started
+      enabled: yes
+
+  - name: Disparar una corrida de prueba
+    systemd:
+      name: "{{ unit_name }}.service"
+      state: started
+
+  - name: Verificar que se generó .informe_urls_48h.json
+    # Con retries: OnBootSec=15min puede disparar el timer apenas se habilita
+    # (si el host lleva >15min arriba), en paralelo con esta corrida de
+    # prueba explícita — sin esto el stat puede correr antes de que
+    # cualquiera de las dos termine de escribir el archivo.
+    stat:
+      path: "{{ scraper_output_dir }}/.informe_urls_48h.json"
+    register: ianews_informe_test
+    until: ianews_informe_test.stat.exists
+    retries: 6
+    delay: 5
+
+  - name: Abortar si la corrida de prueba no generó .informe_urls_48h.json
+    fail:
+      msg: "La corrida de prueba no dejó {{ scraper_output_dir }}/.informe_urls_48h.json — revisar journalctl -u {{ unit_name }}.service"
+    when: not ianews_informe_test.stat.exists
