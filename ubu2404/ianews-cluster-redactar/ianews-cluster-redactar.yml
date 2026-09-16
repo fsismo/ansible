@@ -1,0 +1,74 @@
+# Despliega el timer de "cluster+redactar" (pasos 2-3 de ianews) en rbpi4004:
+# corre cada 6h y ejecuta `docker compose run --rm processor cluster
+# --fusion-entidades` seguido de `... processor redactar`. Ver
+# wiki/Processor.md y wiki/Decisiones.md del repo ianews (secciones de
+# Clustering, Tema/Fusión) para el detalle de qué hace cada paso.
+#
+# No es una pieza ni una imagen aparte: reusa el servicio "processor" ya
+# desplegado por ianews-processor.yml (mismo compose.yml/.env/volumen), solo
+# cambia el comando. Por eso este playbook no toca compose/env/do.sh, asume
+# que ianews-processor.yml ya corrió antes en el host.
+#
+# Recompute completo (no incremental): la corrida de prueba puede tardar
+# 45-90+ min con el dataset actual, más a medida que crece — por eso el
+# retry de la verificación es largo (hasta 90 min), no como en
+# ianews-informe.yml o ianews-scraper.yml.
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+
+  vars:
+    pieza: cluster-redactar
+    unit_name: "{{ proyecto }}-{{ pieza }}"
+    service_file: /etc/systemd/system/{{ unit_name }}.service
+    timer_file: /etc/systemd/system/{{ unit_name }}.timer
+
+  tasks:
+  - name: Copiar ianews-cluster-redactar.service
+    template:
+      src: etc/systemd/system/ianews-cluster-redactar.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar ianews-cluster-redactar.timer
+    template:
+      src: etc/systemd/system/ianews-cluster-redactar.timer
+      dest: "{{ timer_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: Habilitar e iniciar {{ unit_name }}.timer
+    systemd:
+      name: "{{ unit_name }}.timer"
+      state: started
+      enabled: yes
+
+  - name: Disparar una corrida de prueba
+    systemd:
+      name: "{{ unit_name }}.service"
+      state: started
+
+  - name: Verificar que se generó .last_run_redactar.json
+    # Recompute completo: puede tardar bastante. Reintenta hasta 90 min
+    # (90 x 60s) antes de dar la corrida de prueba por fallida.
+    stat:
+      path: "{{ scraper_output_dir }}/.last_run_redactar.json"
+    register: ianews_cluster_redactar_test
+    until: ianews_cluster_redactar_test.stat.exists
+    retries: 90
+    delay: 60
+
+  - name: Abortar si la corrida de prueba no generó .last_run_redactar.json
+    fail:
+      msg: "La corrida de prueba no dejó {{ scraper_output_dir }}/.last_run_redactar.json — revisar journalctl -u {{ unit_name }}.service"
+    when: not ianews_cluster_redactar_test.stat.exists

@@ -1,0 +1,14 @@
+[Unit]
+Description=ianews cluster+redactar (pasos 2-3, recompute completo)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{ compose_dir }}
+ExecStart=/bin/sh -c '/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor cluster --fusion-entidades && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor redactar'
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

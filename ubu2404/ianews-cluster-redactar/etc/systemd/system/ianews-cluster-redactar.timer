@@ -1,0 +1,14 @@
+[Unit]
+Description=Timer para ianews cluster+redactar (cada 6h)
+Requires=ianews-cluster-redactar.service
+
+[Timer]
+# Intervalo real (no calendario), igual criterio que ianews-informe.timer:
+# recompute completo, tarda más a medida que crece el dataset, así que
+# importa el gap real desde la última corrida, no un horario fijo de reloj.
+OnBootSec=20min
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

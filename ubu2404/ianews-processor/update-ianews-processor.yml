@@ -63,10 +63,17 @@
         name: "{{ unit_name }}.service"
         state: started
 
-    - name: Verificar que la corrida no reportó errores
+    - name: Verificar que la corrida no reportó una tasa de errores anómala
+      # Mismo fix que update-ianews-scraper.yml (ver ese playbook): un
+      # errores=1 puntual (ej. una respuesta JSON mal formada del LLM,
+      # autorecuperable en la corrida siguiente — no hay caché de negativos)
+      # bloqueaba cualquier update real con un rollback automático. Umbral:
+      # tasa de error sobre el total procesado, no conteo absoluto.
       shell: >-
         python3 -c "import json,sys; d=json.load(open('{{ last_run_file }}'));
-        sys.exit('errores=%d en la corrida' % d['errores']) if d.get('errores') else None"
+        total=sum(d.get(k,0) for k in ('procesadas','ya_tenian','errores'));
+        errores=d.get('errores',0); tasa=errores/total if total else 0;
+        sys.exit('errores=%d de %d (%.1f%%) supera el umbral de 5%%' % (errores, total, tasa*100)) if tasa > 0.05 else None"
       changed_when: false
 
     - name: Registrar versiones posteriores al update
