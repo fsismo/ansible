@@ -1,6 +1,6 @@
 ---
 tags: [servicio, docker, ianews, scraper, processor]
-updated: 2026-09-15
+updated: 2026-09-16
 ---
 
 # Ianews
@@ -110,6 +110,13 @@ del scraper.
 - **Primera corrida verificada** (2026-09-15): 277 notas nuevas, 1 error
   (autorecuperable — ver "Reintentos" en `/mnt/storage/Code/ianews/wiki/Scraper-Operacion.md`,
   no es un archivo de este vault).
+- **Umbral de error por tasa, no por conteo (2026-09-16)**: el chequeo de
+  `errores` en `update-ianews-scraper.yml` pasó de "cualquier `errores>0`
+  aborta" a "tasa de error sobre el total procesado > 5% aborta". Motivo:
+  una URL que falla siempre (self-healing por diseño, sin caché de
+  negativos) da un `errores=1` estable en cada corrida y bloqueaba **todo**
+  update real con un rollback automático, no solo el que de verdad rompía
+  algo — pasó en vivo el 2026-09-16 al desplegar el informe de URLs.
 
 ---
 
