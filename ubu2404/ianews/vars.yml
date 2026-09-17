@@ -36,3 +36,31 @@ ianews_ollama_base_url: "http://alphaprime.sismonda.local:11434"
 ianews_ollama_model: "gemma4:26b-iq4xs"
 ianews_ollama_request_timeout: 120
 ianews_processor_data_dir: output
+
+# Processor — Postgres (cluster/redactar, pasos 2-3) corre en rbpi4004,
+# mismo host que scraper/processor (ver ubu2404/ianews-postgres/): memoria
+# no es problema (footprint de 100-200MB), acceso local en vez de por red, y
+# rbpi4004 ya tiene backup automático de /var/docker-data
+# (utils/rbpi/rbpi-backup.sh, cron diario) que alphaprime no tiene. Ollama
+# sigue siendo la única dependencia de red real del processor (por el GPU),
+# eso no cambia pongamos Postgres donde lo pongamos.
+#
+# El host de Postgres y el host del processor son el mismo, pero son
+# proyectos docker-compose separados (sin red Docker compartida) — por eso
+# igual hace falta el hostname de red en el DSN, no "localhost" ni un nombre
+# de servicio Docker (mismo criterio que ianews_ollama_base_url arriba).
+#
+# La password sale del lookup `password` de Ansible, evaluado en el
+# controller y cacheado en un archivo — si el día de mañana Postgres y
+# processor terminan en hosts distintos de nuevo, este mecanismo ya
+# funciona sin cambios (a diferencia de generarla con `openssl rand` en el
+# host destino, como hace ollama.yml, que la dejaría atrapada en un solo
+# .env). Ver wiki/Decisiones.md § Postgres para cluster/redactar del repo
+# ianews.
+ianews_postgres_password_file: /mnt/storage/ansible/ubu2404/ianews/.secrets/postgres_password
+ianews_postgres_password: "{{ lookup('ansible.builtin.password', ianews_postgres_password_file, length=32, chars=['ascii_letters', 'digits']) }}"
+ianews_postgres_host: rbpi4004.sismonda.local
+ianews_postgres_port: 5432
+ianews_postgres_db: ianews
+ianews_postgres_user: ianews
+ianews_postgres_dsn: "postgresql://{{ ianews_postgres_user }}:{{ ianews_postgres_password }}@{{ ianews_postgres_host }}:{{ ianews_postgres_port }}/{{ ianews_postgres_db }}"

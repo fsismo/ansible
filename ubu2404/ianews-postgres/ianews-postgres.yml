@@ -1,0 +1,124 @@
+# Despliega Postgres para ianews en rbpi4004.sismonda.local — cluster/
+# redactar (pasos 2-3 del processor) persisten acá desde 2026-09-16. Ver
+# wiki/Decisiones.md § Postgres para cluster/redactar y
+# wiki/Modelo-de-datos.md § Esquema Postgres del repo ianews.
+#
+# rbpi4004, no alphaprime: mismo host que ya corre scraper/processor —
+# footprint de memoria de Postgres es chico (100-200MB), acceso local en vez
+# de por red, y rbpi4004 ya tiene backup automático de /var/docker-data
+# (utils/rbpi/rbpi-backup.sh, cron diario) que alphaprime no tiene. Ollama
+# sigue siendo la única dependencia de red real del processor (por el GPU),
+# eso no cambia con esta decisión.
+#
+# Servicio persistente (no de corrida única como scraper/processor) — imagen
+# con pgvector precompilado, storage local (no NFS, mismo criterio que el
+# resto de bases de datos del homelab).
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+
+  tasks:
+  - name: Include Docker / Docker Compose Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio /opt/docker/ianews-postgres
+    file:
+      path: /opt/docker/ianews-postgres
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Crear directorio /opt/docker/ianews-postgres/migrations
+    file:
+      path: /opt/docker/ianews-postgres/migrations
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Crear directorio de storage /var/docker-data/ianews-postgres/data
+    file:
+      path: /var/docker-data/ianews-postgres/data
+      state: directory
+      owner: root
+      group: root
+      mode: 0700
+
+  - name: Copiar las migraciones (fuente de verdad, processor/migrations/ del repo ianews)
+    copy:
+      src: "{{ item }}"
+      dest: "/opt/docker/ianews-postgres/migrations/{{ item | basename }}"
+      owner: root
+      group: root
+      mode: 0644
+    with_fileglob:
+      - "/mnt/storage/Code/ianews/processor/migrations/*.sql"
+    loop_control:
+      label: "{{ item | basename }}"
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/ianews-postgres/compose.yml
+      dest: /opt/docker/ianews-postgres/compose.yml
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    notify: Reiniciar ianews-postgres
+
+  - name: Copiar .env
+    template:
+      src: opt/docker/ianews-postgres/env.j2
+      dest: /opt/docker/ianews-postgres/.env
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+    notify: Reiniciar ianews-postgres
+
+  - name: Copiar ianews-postgres.service
+    template:
+      src: etc/systemd/system/ianews-postgres.service
+      dest: /etc/systemd/system/ianews-postgres.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Habilitar e iniciar ianews-postgres.service
+    systemd:
+      name: ianews-postgres.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Esperar a que Postgres esté healthy
+    command: docker inspect -f "{% raw %}{{.State.Health.Status}}{% endraw %}" ianews-postgres
+    register: ianews_postgres_health
+    until: ianews_postgres_health.stdout == "healthy"
+    retries: 12
+    delay: 5
+    changed_when: false
+
+  - name: Verificar que la migración inicial se aplicó
+    command: >
+      docker exec ianews-postgres
+      psql -U {{ ianews_postgres_user }} -d {{ ianews_postgres_db }}
+      -tAc "SELECT count(*) FROM schema_migrations WHERE version = 1"
+    register: ianews_postgres_migracion
+    changed_when: false
+
+  - name: Abortar si la migración inicial no se aplicó
+    fail:
+      msg: "schema_migrations no tiene la versión 1 — revisar 'docker logs ianews-postgres' en rbpi4004"
+    when: ianews_postgres_migracion.stdout | trim != "1"
+
+  handlers:
+  - name: Reiniciar ianews-postgres
+    systemd:
+      name: ianews-postgres.service
+      state: restarted

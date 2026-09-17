@@ -1,0 +1,31 @@
+# Postgres para ianews — cluster/redactar (pasos 2-3 del processor) persisten
+# acá desde 2026-09-16. Ver wiki/Decisiones.md § Postgres para
+# cluster/redactar del repo ianews. Imagen con pgvector precompilado: la
+# extensión se habilita desde la migración inicial, sin uso todavía
+# (embeddings futuros, ver esa misma nota).
+#
+# A diferencia de scraper/processor (corrida única, `docker compose run`),
+# esto es un servicio persistente — mismo patrón que ollama.yml: `up -d` +
+# systemd oneshot con RemainAfterExit.
+#
+# ./migrations la copia el playbook (ianews-postgres.yml) desde
+# processor/migrations/ del repo ianews — Postgres los corre una sola vez,
+# al crear la base, vía /docker-entrypoint-initdb.d. Migraciones posteriores
+# las aplica processor/db.py::aplicar_migraciones() (no este mecanismo).
+
+services:
+  ianews-postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ianews-postgres
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - /var/docker-data/ianews-postgres/data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

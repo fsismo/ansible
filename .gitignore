@@ -6,4 +6,6 @@ ubu2404/immich/opt/docker/immich/.env
 ubu2404/hermes-agent/opt/docker/hermes-agent/.env
 ubu2404/zot/opt/docker/zot/htpasswd
 ubu2404/zot/opt/docker/zot/certs/
+ubu2404/ianews-postgres/opt/docker/ianews-postgres/.env
+ubu2404/ianews/.secrets/
 .vscode/settings.json
