@@ -1,8 +1,9 @@
-# Despliega el timer de "cluster+redactar" (pasos 2-3 de ianews) en rbpi4004:
-# corre cada 6h y ejecuta `docker compose run --rm processor cluster
-# --fusion-entidades` seguido de `... processor redactar`. Ver
-# wiki/Processor.md y wiki/Decisiones.md del repo ianews (secciones de
-# Clustering, Tema/Fusión) para el detalle de qué hace cada paso.
+# Despliega el timer de "cluster+redactar+sesgo" (pasos 2-4 de ianews) en
+# rbpi4004: corre cada 6h y ejecuta `docker compose run --rm processor
+# cluster --fusion-entidades` seguido de `... processor redactar` y
+# `... processor sesgo`. Ver wiki/Processor.md y wiki/Decisiones.md del
+# repo ianews (secciones de Clustering, Tema/Fusión, Sesgo) para el detalle
+# de qué hace cada paso.
 #
 # No es una pieza ni una imagen aparte: reusa el servicio "processor" ya
 # desplegado por ianews-processor.yml (mismo compose.yml/.env/volumen), solo
@@ -58,17 +59,19 @@
       name: "{{ unit_name }}.service"
       state: started
 
-  - name: Verificar que se generó .last_run_redactar.json
-    # Recompute completo: puede tardar bastante. Reintenta hasta 90 min
-    # (90 x 60s) antes de dar la corrida de prueba por fallida.
+  - name: Verificar que se generó .last_run_sesgo.json
+    # Último paso de la cadena (cluster && redactar && sesgo): si existe,
+    # los tres terminaron. Recompute completo: puede tardar bastante.
+    # Reintenta hasta 90 min (90 x 60s) antes de dar la corrida de prueba
+    # por fallida.
     stat:
-      path: "{{ scraper_output_dir }}/.last_run_redactar.json"
+      path: "{{ scraper_output_dir }}/.last_run_sesgo.json"
     register: ianews_cluster_redactar_test
     until: ianews_cluster_redactar_test.stat.exists
     retries: 90
     delay: 60
 
-  - name: Abortar si la corrida de prueba no generó .last_run_redactar.json
+  - name: Abortar si la corrida de prueba no generó .last_run_sesgo.json
     fail:
-      msg: "La corrida de prueba no dejó {{ scraper_output_dir }}/.last_run_redactar.json — revisar journalctl -u {{ unit_name }}.service"
+      msg: "La corrida de prueba no dejó {{ scraper_output_dir }}/.last_run_sesgo.json — revisar journalctl -u {{ unit_name }}.service"
     when: not ianews_cluster_redactar_test.stat.exists
