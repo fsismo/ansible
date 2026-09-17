@@ -1,5 +1,5 @@
 ---
-- hosts: all:!dns 
+- hosts: all:!dns:!blackmamba.sismonda.local
   become: yes 
   handlers:
    - name: restart_service
