@@ -64,3 +64,13 @@ ianews_postgres_port: 5432
 ianews_postgres_db: ianews
 ianews_postgres_user: ianews
 ianews_postgres_dsn: "postgresql://{{ ianews_postgres_user }}:{{ ianews_postgres_password }}@{{ ianews_postgres_host }}:{{ ianews_postgres_port }}/{{ ianews_postgres_db }}"
+
+# Processor — imagen (paso 5, ver wiki/Decisiones.md § Imágenes por
+# noticia del repo ianews). ComfyUI corre en alphaprime (misma red que
+# Ollama, pero la iGPU Strix, no la discreta) — no es secreto. La API key
+# de Pexels sí es un secreto real emitido por ellos (no algo que generamos
+# nosotros, no aplica el lookup `password` que sí usamos para Postgres) —
+# mismo criterio que el token de Cloudflare en ubu2404/ianews-web/: un
+# archivo local gitignored, no un valor en texto plano acá.
+ianews_pexels_api_key: "{{ lookup('file', '/mnt/storage/ansible/ubu2404/ianews/.secrets/pexels_api_key') }}"
+ianews_comfyui_base_url: "http://alphaprime.sismonda.local:8188"
