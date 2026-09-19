@@ -96,6 +96,18 @@
       state: started
       enabled: yes
 
+  # Sin esto, un re-run de este playbook (ej. para actualizar solo el .env
+  # compartido) dispara la corrida de prueba con la imagen vieja que ya
+  # esté cacheada en el host — `docker compose run` no pull-ea sola salvo
+  # que la imagen no exista localmente. Mismo paso que ya tenía
+  # update-ianews-processor.yml, sumado acá para que este playbook sea
+  # seguro de re-ejecutar en cualquier momento, no solo la primera vez.
+  - name: Pull de la última imagen de {{ pieza }}
+    command: docker compose -f compose.yml -f compose.override.yml pull {{ pieza }}
+    args:
+      chdir: "{{ compose_dir }}"
+    changed_when: true
+
   # No se aborta el deploy si esto no termina rápido: a diferencia del scraper
   # (acotado por --max por feed), la primera corrida del processor procesa
   # TODO el backlog acumulado de output/ sin "entidades" — puede haber
