@@ -1,0 +1,6 @@
+# Vars del stack web de ianews (nginx + cloudflared). Ver
+# ubu2404/ianews-web/ianews-web.yml y wiki/Decisiones.md § Publicación vía
+# Cloudflare Tunnel del repo ianews.
+
+ianews_web_domain: ianews.fyi
+ianews_web_adsense_publisher_id: pub-6667902178443036

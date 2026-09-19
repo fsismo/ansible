@@ -1,0 +1,41 @@
+# Stack web público de ianews: nginx (sirve estático) + cloudflared (túnel
+# de Cloudflare, sin puertos publicados al host — Cloudflare termina TLS en
+# su borde y el túnel entra directo a nginx por la red docker interna, sin
+# pasar por Nginx Proxy Manager). Ver wiki/Decisiones.md § Publicación vía
+# Cloudflare Tunnel del repo ianews.
+#
+# Túnel dedicado a ianews (no comparte el de ext-www): más simple de
+# razonar, y ext-www corre en otro host (rbpi5002) — un cloudflared ahí no
+# podría alcanzar este nginx de todos modos.
+#
+# El contenido hoy es un placeholder + ads.txt (para el alta de AdSense);
+# cuando exista el Builder, monta su salida acá en vez de ./html.
+
+networks:
+  containers:
+    ipam:
+      config:
+        - subnet: 172.32.0.0/24
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - /var/docker-data/ianews-web/html:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      containers:
+        ipv4_address: 172.32.0.10
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      containers:
+        ipv4_address: 172.32.0.11
+    depends_on:
+      - nginx

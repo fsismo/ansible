@@ -1,0 +1,122 @@
+# Despliega el stack web público de ianews en rbpi4004 (nginx + cloudflared)
+# — ver wiki/Decisiones.md § Publicación vía Cloudflare Tunnel del repo
+# ianews. Mismo host que scraper/processor/postgres, sin exponer ningún
+# puerto: cloudflared hace la conexión saliente al borde de Cloudflare, que
+# termina TLS y rutea al hostname público configurado en el dashboard
+# (Zero Trust → Networks → Tunnels) directo a http://nginx:80 — sin pasar
+# por Nginx Proxy Manager.
+#
+# Requiere que el túnel ya exista en el dashboard de Cloudflare (creado a
+# mano — "Create a tunnel" → Docker → copiar el token a
+# opt/docker/ianews-web/.env como CLOUDFLARE_TUNNEL_TOKEN, gitignored) y que
+# su "Public Hostname" apunte a http://nginx:80.
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews-web/vars.yml
+
+  tasks:
+  - name: Include Docker / Docker Compose Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio /opt/docker/ianews-web
+    file:
+      path: /opt/docker/ianews-web
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Crear directorio /opt/docker/ianews-web/nginx
+    file:
+      path: /opt/docker/ianews-web/nginx
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Crear directorio de storage /var/docker-data/ianews-web/html
+    file:
+      path: /var/docker-data/ianews-web/html
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/ianews-web/compose.yml
+      dest: /opt/docker/ianews-web/compose.yml
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    notify: Reiniciar ianews-web
+
+  - name: Copiar nginx/default.conf
+    template:
+      src: opt/docker/ianews-web/nginx/default.conf
+      dest: /opt/docker/ianews-web/nginx/default.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    notify: Reiniciar ianews-web
+
+  - name: Copiar .env (CLOUDFLARE_TUNNEL_TOKEN)
+    template:
+      src: opt/docker/ianews-web/.env
+      dest: /opt/docker/ianews-web/.env
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+    notify: Reiniciar ianews-web
+
+  - name: Copiar index.html (placeholder hasta que exista el Builder)
+    copy:
+      src: opt/docker/ianews-web/html/index.html
+      dest: /var/docker-data/ianews-web/html/index.html
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar robots.txt (bloquea indexación mientras no hay contenido real)
+    copy:
+      src: opt/docker/ianews-web/html/robots.txt
+      dest: /var/docker-data/ianews-web/html/robots.txt
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Generar ads.txt (AdSense)
+    template:
+      src: opt/docker/ianews-web/html/ads.txt.j2
+      dest: /var/docker-data/ianews-web/html/ads.txt
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar ianews-web.service
+    template:
+      src: etc/systemd/system/ianews-web.service
+      dest: /etc/systemd/system/ianews-web.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Habilitar e iniciar ianews-web.service
+    systemd:
+      name: ianews-web.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  handlers:
+  - name: Reiniciar ianews-web
+    systemd:
+      name: ianews-web.service
+      state: restarted
