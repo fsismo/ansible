@@ -1,0 +1,22 @@
+# Pieza "builder" de ianews: genera el sitio estático (home/sección/nota)
+# desde Postgres y escribe directo en el volumen que sirve nginx de
+# ianews-web — ver ubu2404/ianews-web/opt/docker/ianews-web/compose.yml y
+# wiki/Decisiones.md § Limpieza selectiva del output del Builder del repo
+# ianews (importante: el Builder NO borra ese directorio entero, solo lo
+# que él genera — ahí también viven ads.txt/robots.txt puestos por
+# ianews-web.yml).
+#
+# Sin contenedor persistente (mismo patrón que scraper/processor): se
+# invoca con `docker compose run --rm builder`, no `up -d`.
+services:
+  builder:
+    image: registry.sismonda.local:5000/ianews-builder:latest
+    env_file: .env
+    volumes:
+      # Solo lectura: acá deja el processor las imágenes de ComfyUI (mismo
+      # volumen que ubu2404/ianews/vars.yml § Imagen, ver
+      # IANEWS_IMAGENES_DIR en .env).
+      - /var/docker-data/ianews/scraper/output/imagenes:/imagenes:ro
+      # Lectura-escritura: el mismo directorio que nginx monta :ro en
+      # ianews-web — de ahí la limpieza selectiva de arriba.
+      - /var/docker-data/ianews-web/html:/output

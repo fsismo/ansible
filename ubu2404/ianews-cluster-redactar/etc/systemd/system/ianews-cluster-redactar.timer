@@ -1,5 +1,5 @@
 [Unit]
-Description=Timer para ianews cluster+redactar+sesgo+imagen (cada 6h)
+Description=Timer para ianews cluster+redactar+sesgo+imagen+build (cada 6h)
 Requires=ianews-cluster-redactar.service
 
 [Timer]

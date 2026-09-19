@@ -1,0 +1,87 @@
+# Despliega la pieza "builder" de ianews en rbpi4004: genera home/sección/
+# nota estáticos desde Postgres y escribe directo en el volumen que sirve
+# nginx de ianews-web (mismo host, ver
+# ubu2404/ianews-web/opt/docker/ianews-web/compose.yml). No corre solo con
+# timer propio — se invoca vía `systemctl start --wait ianews-builder.service`
+# encadenado al final de ianews-cluster-redactar.service (ver ese repo, y
+# wiki/Decisiones.md § Builder desplegado del repo ianews), o a mano para
+# una corrida puntual.
+#
+# Requiere que ianews-web.yml ya se haya corrido una vez (crea
+# /var/docker-data/ianews-web/html con owner 1000) y que
+# ianews-postgres.yml/ianews-processor.yml ya existan (Postgres + el
+# volumen de imágenes de ComfyUI).
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+    - /mnt/storage/ansible/ubu2404/ianews-web/vars.yml
+
+  tasks:
+  - name: Include Docker Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio /opt/docker/ianews-builder
+    file:
+      path: /opt/docker/ianews-builder
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/ianews-builder/compose.yml
+      dest: /opt/docker/ianews-builder/compose.yml
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar .env
+    template:
+      src: opt/docker/ianews-builder/env.j2
+      dest: /opt/docker/ianews-builder/.env
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar ianews-builder.service
+    template:
+      src: etc/systemd/system/ianews-builder.service
+      dest: /etc/systemd/system/ianews-builder.service
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  # Sin esto, un re-run de este playbook (ej. tras un cambio de código del
+  # Builder) dispara la corrida con la imagen vieja que ya esté cacheada en
+  # el host — mismo bug ya encontrado y corregido en
+  # ianews-processor.yml/ianews-scraper.yml (ver el mismo paso ahí).
+  - name: Pull de la última imagen de builder
+    command: docker compose -f compose.yml pull builder
+    args:
+      chdir: /opt/docker/ianews-builder
+    changed_when: true
+
+  - name: Disparar una corrida de prueba
+    systemd:
+      name: ianews-builder.service
+      state: started
+
+  - name: Verificar que se generó .last_run_builder.json
+    stat:
+      path: /var/docker-data/ianews-web/html/.last_run_builder.json
+    register: ianews_builder_test
+
+  - name: Abortar si la corrida de prueba no generó .last_run_builder.json
+    fail:
+      msg: "La corrida de prueba no dejó .last_run_builder.json — revisar journalctl -u ianews-builder.service"
+    when: not ianews_builder_test.stat.exists

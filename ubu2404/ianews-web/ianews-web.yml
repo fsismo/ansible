@@ -38,10 +38,15 @@
       mode: 0755
 
   - name: Crear directorio de storage /var/docker-data/ianews-web/html
+    # owner "1000": mismo criterio que scraper_output_dir en
+    # ianews-scraper.yml — es el UID del usuario no-root "app" dentro del
+    # contenedor del Builder (ver builder/Dockerfile), que necesita poder
+    # escribir acá una vez que ubu2404/ianews-builder/ esté desplegado.
+    # nginx solo lo monta :ro, no necesita ser el dueño.
     file:
       path: /var/docker-data/ianews-web/html
       state: directory
-      owner: root
+      owner: "1000"
       group: root
       mode: 0755
 
@@ -76,12 +81,17 @@
     notify: Reiniciar ianews-web
 
   - name: Copiar index.html (placeholder hasta que exista el Builder)
+    # force: no — una vez que el Builder generó el index.html real, este
+    # playbook NO debe volver a pisarlo con el placeholder en una corrida
+    # futura (ej. si se re-ejecuta por un cambio de nginx/Cloudflare no
+    # relacionado). Ver ubu2404/ianews-builder/.
     copy:
       src: opt/docker/ianews-web/html/index.html
       dest: /var/docker-data/ianews-web/html/index.html
       owner: root
       group: root
       mode: 0644
+      force: no
 
   - name: Copiar robots.txt (bloquea indexación mientras no hay contenido real)
     copy:

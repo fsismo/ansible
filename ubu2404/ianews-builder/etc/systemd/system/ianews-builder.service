@@ -1,0 +1,14 @@
+[Unit]
+Description=ianews builder (genera home/sección/nota estáticos)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/docker/ianews-builder
+ExecStart=/usr/bin/docker compose -f compose.yml run --rm builder build
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

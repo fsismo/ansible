@@ -1,5 +1,5 @@
 [Unit]
-Description=ianews cluster+redactar+sesgo+imagen (pasos 2-5)
+Description=ianews cluster+redactar+sesgo+imagen+build (pasos 2-5 + sitio estático)
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
@@ -7,7 +7,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory={{ compose_dir }}
-ExecStart=/bin/sh -c '/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor cluster --fusion-entidades && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor redactar && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor sesgo && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor imagen'
+ExecStart=/bin/sh -c '/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor cluster --fusion-entidades && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor redactar && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor sesgo && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor imagen && /usr/bin/systemctl start --wait ianews-builder.service'
 TimeoutStartSec=0
 
 [Install]

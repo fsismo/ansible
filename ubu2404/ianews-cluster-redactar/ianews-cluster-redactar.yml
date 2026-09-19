@@ -1,9 +1,16 @@
-# Despliega el timer de "cluster+redactar+sesgo+imagen" (pasos 2-5 de
-# ianews) en rbpi4004: corre cada 6h y ejecuta `docker compose run --rm
-# processor cluster --fusion-entidades` seguido de `... processor redactar`,
-# `... processor sesgo` y `... processor imagen`. Ver wiki/Processor.md y
-# wiki/Decisiones.md del repo ianews (secciones de Clustering, Tema/Fusión,
-# Sesgo, Imágenes por noticia) para el detalle de qué hace cada paso.
+# Despliega el timer de "cluster+redactar+sesgo+imagen+build" (pasos 2-5 +
+# sitio estático de ianews) en rbpi4004: corre cada 6h y ejecuta `docker
+# compose run --rm processor cluster --fusion-entidades` seguido de
+# `... processor redactar`, `... processor sesgo`, `... processor imagen`
+# y `systemctl start --wait ianews-builder.service` (deja el sitio
+# publicado con los datos frescos). Ver wiki/Processor.md, wiki/Builder.md
+# y wiki/Decisiones.md del repo ianews (secciones de Clustering, Tema/
+# Fusión, Sesgo, Imágenes por noticia, Builder desplegado) para el detalle
+# de qué hace cada paso.
+#
+# Requiere que ubu2404/ianews-builder/ianews-builder.yml ya se haya
+# corrido una vez (instala el servicio ianews-builder.service que este
+# encadena).
 #
 # No es una pieza ni una imagen aparte: reusa el servicio "processor" ya
 # desplegado por ianews-processor.yml (mismo compose.yml/.env/volumen), solo
@@ -59,21 +66,21 @@
       name: "{{ unit_name }}.service"
       state: started
 
-  - name: Verificar que se generó .last_run_imagen.json
-    # Último paso de la cadena (cluster && redactar && sesgo && imagen): si
-    # existe, los cuatro terminaron. Recompute completo: puede tardar
-    # bastante, y esta primera corrida además procesa el backlog de imagen
-    # (Pexels/ComfyUI) para todas las noticias vigentes sin imagen todavía.
-    # Reintenta hasta 90 min (90 x 60s) antes de dar la corrida de prueba
-    # por fallida.
+  - name: Verificar que se generó .last_run_builder.json
+    # Último paso de la cadena (cluster && redactar && sesgo && imagen &&
+    # build): si existe, los cinco terminaron. Recompute completo: puede
+    # tardar bastante, y esta primera corrida además procesa el backlog de
+    # imagen (Pexels/ComfyUI) para todas las noticias vigentes sin imagen
+    # todavía. Reintenta hasta 90 min (90 x 60s) antes de dar la corrida de
+    # prueba por fallida.
     stat:
-      path: "{{ scraper_output_dir }}/.last_run_imagen.json"
+      path: /var/docker-data/ianews-web/html/.last_run_builder.json
     register: ianews_cluster_redactar_test
     until: ianews_cluster_redactar_test.stat.exists
     retries: 90
     delay: 60
 
-  - name: Abortar si la corrida de prueba no generó .last_run_imagen.json
+  - name: Abortar si la corrida de prueba no generó .last_run_builder.json
     fail:
-      msg: "La corrida de prueba no dejó {{ scraper_output_dir }}/.last_run_imagen.json — revisar journalctl -u {{ unit_name }}.service"
+      msg: "La corrida de prueba no dejó .last_run_builder.json — revisar journalctl -u {{ unit_name }}.service y journalctl -u ianews-builder.service"
     when: not ianews_cluster_redactar_test.stat.exists
