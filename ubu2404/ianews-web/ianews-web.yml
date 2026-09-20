@@ -93,7 +93,7 @@
       mode: 0644
       force: no
 
-  - name: Copiar robots.txt (bloquea indexación mientras no hay contenido real)
+  - name: Copiar robots.txt (indexación habilitada desde 2026-09-20)
     copy:
       src: opt/docker/ianews-web/html/robots.txt
       dest: /var/docker-data/ianews-web/html/robots.txt
