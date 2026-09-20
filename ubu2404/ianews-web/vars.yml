@@ -5,14 +5,22 @@
 ianews_web_domain: ianews.fyi
 ianews_web_adsense_publisher_id: pub-6667902178443036
 
+# Interruptor maestro (ver wiki/Decisiones.md § Integración de Google
+# AdSense del repo ianews): en `false` el script del <head> sigue presente
+# (Google lo necesita para la revisión del sitio) pero ningún bloque de
+# anuncio se renderiza, ni siquiera el contenedor. Cambiar a `true` cuando
+# AdSense apruebe el sitio.
+ianews_web_adsense_enabled: false
+
 # Espacios de anuncio del Builder (ver ubu2404/ianews-builder/,
-# wiki/Decisiones.md § Anuncios in-feed con AdSense del repo ianews). Los
-# genera AdSense en su panel, una unidad por posición — vacíos hasta que
-# existan, el Builder cae a su placeholder de a uno mientras tanto. No son
-# secretos (un ad slot/layout-key no da acceso a nada), pero tampoco hay
-# nada que poner acá hasta tenerlos.
-ianews_web_adsense_infeed_slot: ""
+# wiki/Decisiones.md § Integración de Google AdSense del repo ianews) — las
+# 4 unidades manuales ya creadas en el panel de AdSense. No son secretos
+# (un ad slot/layout-key no da acceso a nada). El in-feed
+# (`ianews_infeed_listado`) necesita además su layout-key, que AdSense solo
+# entrega junto con el snippet exacto de esa unidad — hasta tenerlo, el
+# in-feed no se renderiza aunque el resto ya esté habilitado.
+ianews_web_adsense_infeed_slot: "5976359713"
 ianews_web_adsense_infeed_layout_key: ""
-ianews_web_adsense_top_slot: ""
-ianews_web_adsense_sidebar_slot: ""
-ianews_web_adsense_article_slot: ""
+ianews_web_adsense_top_slot: "9880954865"
+ianews_web_adsense_sidebar_slot: "2904482978"
+ianews_web_adsense_article_slot: "6502973325"
