@@ -24,3 +24,8 @@ ianews_web_adsense_infeed_layout_key: ""
 ianews_web_adsense_top_slot: "9880954865"
 ianews_web_adsense_sidebar_slot: "2904482978"
 ianews_web_adsense_article_slot: "6502973325"
+
+# GA4 (measurement ID público — ver wiki/Decisiones.md § Google Analytics
+# 4 (GA4) del repo ianews). Propiedad/stream ya creados en GA4, no hay
+# nada que crear del lado de Google.
+ianews_web_ga4_measurement_id: "G-0XN7MTEJW9"
