@@ -4,3 +4,12 @@
 
 ianews_web_domain: ianews.fyi
 ianews_web_adsense_publisher_id: pub-6667902178443036
+
+# Anuncio in-feed del grid de home del Builder (ver
+# ubu2404/ianews-builder/, wiki/Decisiones.md § Anuncios in-feed con
+# AdSense del repo ianews). Los genera AdSense en su panel — vacíos hasta
+# que existan, el Builder cae a un placeholder mientras tanto. No son
+# secretos (un ad slot/layout-key no da acceso a nada), pero tampoco hay
+# nada que poner acá hasta tenerlos.
+ianews_web_adsense_infeed_slot: ""
+ianews_web_adsense_infeed_layout_key: ""
