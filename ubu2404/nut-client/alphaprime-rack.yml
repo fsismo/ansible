@@ -1,0 +1,71 @@
+---
+# Clientes NUT del rack de alphaprime: comparten el APC Back-UPS XS 1100CI que está
+# conectado por USB a alphaprime (servidor: ubu2404/nut-server/alphaprime.yml).
+# Hoy el único host de este rack gestionado por ansible es rbpi3-001; el NAS y Home
+# Assistant están configurados por fuera. Para sumar otro host, agregarlo a `hosts:`.
+#
+# La contraseña NO está en el repo (mismo criterio que nut-server/alphaprime.yml):
+#   ansible-playbook -i hosts ubu2404/nut-client/alphaprime-rack.yml \
+#     -e "nut_slave_password=..."
+# Es la del usuario `slave` de /etc/nut/upsd.users en alphaprime.
+#
+# Reemplaza a utils/nut-client.yml (obsoleto): apuntaba a `qnapups@10.0.0.43`
+# (rbpi4003), que ya no es servidor NUT, y usaba un usuario `monslave` que no existe
+# en alphaprime. Desde entonces rbpi3-001 no sabía nada de ningún UPS.
+- hosts: rbpi3-001.sismonda.local
+  become: true
+  vars:
+    nut_server_address: 10.0.0.11
+    nut_ups_name: qnapups
+  handlers:
+    - name: restart_service
+      service:
+        name: nut-client
+        state: restarted
+
+  tasks:
+    - name: Instalar Nut.
+      package:
+        name:
+          - nut
+        state: present
+
+    - name: Copiar nut.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-client/alphaprime-rack/nut.conf
+        dest: /etc/nut/nut.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      notify:
+        - restart_service
+
+    - name: Copiar upsmon.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-client/alphaprime-rack/upsmon.conf.j2
+        dest: /etc/nut/upsmon.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      no_log: true
+      notify:
+        - restart_service
+
+    - name: Copiar upssched.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-client/alphaprime-rack/upssched.conf
+        dest: /etc/nut/upssched.conf
+        owner: root
+        group: nut
+        mode: 0640
+      notify:
+        - restart_service
+
+    - name: Verificar ejecución de Nut.
+      systemd:
+        name: nut-client
+        state: started
+        daemon_reload: true
+        enabled: true
