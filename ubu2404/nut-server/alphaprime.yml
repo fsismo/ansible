@@ -1,0 +1,154 @@
+---
+# NUT en alphaprime: master de un APC Back-UPS XS 1100CI conectado por USB a este
+# equipo. Comparten este UPS (como clientes) rbpi3-001, el NAS y Home Assistant.
+#
+# Las contraseñas NO están en el repo (mismo criterio que rbpi4001.yml):
+#   ansible-playbook -i hosts ubu2404/nut-server/alphaprime.yml \
+#     -e "nut_admin_password=... nut_slave_password=..."
+# nut_slave_password es la que usan los clientes remotos (usuario `slave`).
+#
+# Reproduce lo que estaba configurado a mano (2026-09-21). El nombre del UPS sigue
+# siendo `qnapups` a propósito: los clientes ya configurados lo referencian
+# (qnapups@10.0.0.11) y renombrarlo los rompería.
+#
+# Historia: este host recibía utils/nut-client.yml, que le pisaba upsmon.conf con un
+# cliente de rbpi4003 (ya no es servidor NUT) — desde al menos 2026-08-10 el monitor
+# no miraba su propio UPS. Ese playbook ahora excluye a alphaprime.
+- hosts: alphaprime.sismonda.local
+  become: true
+  vars:
+    nut_ups_name: qnapups
+    nut_listen_address: 10.0.0.11
+  handlers:
+    - name: restart_service
+      service:
+        name: nut-server
+        state: restarted
+    - name: restart_monitor
+      service:
+        name: nut-monitor
+        state: restarted
+    - name: daemon_reload
+      systemd:
+        daemon_reload: true
+  tasks:
+    - name: Instalar Nut.
+      package:
+        name:
+          - nut
+        state: present
+
+    - name: Copiar nut.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/alphaprime/nut.conf.j2
+        dest: /etc/nut/nut.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      notify:
+        - restart_service
+        - restart_monitor
+
+    - name: Copiar ups.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/alphaprime/ups.conf.j2
+        dest: /etc/nut/ups.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      notify:
+        - restart_service
+
+    - name: Copiar upsd.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/alphaprime/upsd.conf.j2
+        dest: /etc/nut/upsd.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      notify:
+        - restart_service
+
+    - name: Copiar upsd.users.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/alphaprime/upsd.users.j2
+        dest: /etc/nut/upsd.users
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      no_log: true
+      notify:
+        - restart_service
+
+    - name: Copiar upsmon.conf.
+      template:
+        src: /mnt/storage/ansible/ubu2404/nut-server/alphaprime/upsmon.conf.j2
+        dest: /etc/nut/upsmon.conf
+        owner: root
+        group: nut
+        mode: 0640
+        backup: true
+      no_log: true
+      notify:
+        - restart_monitor
+
+    # upsd escucha en 10.0.0.11 (IP por DHCP): si arranca antes de que la red la
+    # asigne sale con error y, con los reintentos por defecto, agota el límite y
+    # queda caído todo el boot (pasó el 2026-09-20 20:28).
+    - name: Directorio del drop-in de nut-server.
+      file:
+        path: /etc/systemd/system/nut-server.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Copiar drop-in que espera la red y reintenta siempre.
+      copy:
+        src: /mnt/storage/ansible/ubu2404/nut-server/alphaprime/nut-server-espera-red.conf
+        dest: /etc/systemd/system/nut-server.service.d/espera-red.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify:
+        - daemon_reload
+        - restart_service
+
+    - name: Directorio de check-status.
+      file:
+        path: /opt/nut
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Copiar check-status.sh.
+      copy:
+        src: /mnt/storage/ansible/ubu2404/nut-server/opt/nut/check-status.sh
+        dest: /opt/nut/check-status.sh
+        owner: root
+        group: root
+        mode: 0755
+
+    # Antes /opt/nut/nut-status.cron estaba copiado pero nunca se instaló en
+    # /etc/cron.d, así que el guardián no corría.
+    - name: Copiar nut-status cron.
+      copy:
+        src: /mnt/storage/ansible/ubu2404/nut-server/etc/cron.d/nut-status
+        dest: /etc/cron.d/nut-status
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Verificar ejecución de Nut.
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - nut-server
+        - nut-monitor

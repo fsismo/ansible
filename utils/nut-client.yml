@@ -1,5 +1,8 @@
 ---
-- hosts: all:!rbpi4003.sismonda.local 
+# alphaprime NO va acá: tiene su propio UPS (APC Back-UPS XS 1100CI por USB) y es
+# master de NUT en local (MONITOR qnapups@localhost ... master). Este playbook le
+# pisaba upsmon.conf con un cliente que apunta a rbpi4003, que ya no es servidor NUT.
+- hosts: all:!rbpi4003.sismonda.local:!alphaprime.sismonda.local
   become: yes 
   handlers:
    - name: restart_service

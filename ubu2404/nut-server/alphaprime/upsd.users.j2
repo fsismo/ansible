@@ -1,0 +1,9 @@
+[admin]
+    password = {{ nut_admin_password }}
+    actions = SET FSD
+    instcmds = ALL
+    upsmon master
+
+[slave]
+    password = {{ nut_slave_password }}
+    upsmon slave
