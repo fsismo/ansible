@@ -7,7 +7,10 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory={{ compose_dir }}
-ExecStart=/bin/sh -c '/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor cluster --fusion-entidades && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor redactar && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor sesgo && /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor imagen && /usr/bin/systemctl start --wait ianews-builder.service'
+# Los 5 pasos corren SIEMPRE y en orden: un fallo en uno (ej. `imagen`) ya no impide que el
+# builder publique lo que sí esté listo. El servicio termina con error si algo falló, para que siga
+# visible en systemctl/journal. `$$` es el escape de systemd para un `$` literal del shell.
+ExecStart=/bin/sh -c 'fallo=0; for paso in "cluster --fusion-entidades" redactar sesgo imagen; do /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor $$paso || fallo=1; done; /usr/bin/systemctl start --wait ianews-builder.service || fallo=1; exit $$fallo'
 TimeoutStartSec=0
 
 [Install]
