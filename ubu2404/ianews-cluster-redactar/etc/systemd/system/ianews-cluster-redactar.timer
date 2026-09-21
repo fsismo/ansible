@@ -1,5 +1,5 @@
 [Unit]
-Description=Timer para ianews cluster+redactar+sesgo+imagen+build (cada 6h)
+Description=Timer para ianews cluster+redactar+sesgo+imagen+build (cada 4h)
 Requires=ianews-cluster-redactar.service
 
 [Timer]
@@ -7,7 +7,7 @@ Requires=ianews-cluster-redactar.service
 # recompute completo, tarda más a medida que crece el dataset, así que
 # importa el gap real desde la última corrida, no un horario fijo de reloj.
 OnBootSec=20min
-OnUnitActiveSec=6h
+OnUnitActiveSec=4h
 Persistent=true
 
 [Install]
