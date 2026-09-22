@@ -29,3 +29,9 @@ ianews_web_adsense_article_slot: "6502973325"
 # 4 (GA4) del repo ianews). Propiedad/stream ya creados en GA4, no hay
 # nada que crear del lado de Google.
 ianews_web_ga4_measurement_id: "G-0XN7MTEJW9"
+
+# IndexNow (Bing/Yandex/Seznam — Google no participa, ver
+# wiki/Decisiones.md § IndexNow del repo ianews). No es secreta: el
+# protocolo exige publicarla tal cual en /<key>.txt para probar dominio.
+# Generada con `python3 -c "import secrets; print(secrets.token_hex(16))"`.
+ianews_web_indexnow_key: "d0d224b85398fd1fa76410f6f104f2a4"
