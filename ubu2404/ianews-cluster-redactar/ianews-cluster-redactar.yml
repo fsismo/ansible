@@ -1,5 +1,5 @@
 # Despliega el timer de "cluster+redactar+sesgo+imagen+build" (pasos 2-5 +
-# sitio estático de ianews) en rbpi4004: corre cada 6h y ejecuta `docker
+# sitio estático de ianews) en rbpi4004: corre cada 2h y ejecuta `docker
 # compose run --rm processor cluster --fusion-entidades` seguido de
 # `... processor redactar`, `... processor sesgo`, `... processor imagen`
 # y `systemctl start --wait ianews-builder.service` (deja el sitio
