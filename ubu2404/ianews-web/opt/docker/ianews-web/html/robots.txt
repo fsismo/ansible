@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://ianews.fyi/sitemap.xml
+Sitemap: https://ianews.fyi/news-sitemap.xml
