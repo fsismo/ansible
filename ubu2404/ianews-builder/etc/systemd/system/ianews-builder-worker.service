@@ -1,0 +1,21 @@
+[Unit]
+Description=ianews builder worker (ejecuta los `build` de la cola de trabajos)
+# El worker del processor encola `build` al terminar la cadena
+# cluster→redactar→sesgo→imagen→wikidata; este lo toma y genera el sitio.
+# Ver wiki/Decisiones.md § Cola de trabajos (2026-09-24) del repo ianews.
+Requires=docker.service
+After=docker.service network-online.target ianews-postgres.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/docker/ianews-builder
+ExecStartPre=-/usr/bin/docker rm -f ianews-builder-worker
+ExecStart=/usr/bin/docker compose -f compose.yml run --rm --name ianews-builder-worker builder worker
+ExecStop=/usr/bin/docker stop -t 30 ianews-builder-worker
+TimeoutStopSec=60
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

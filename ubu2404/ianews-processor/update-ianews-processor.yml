@@ -1,6 +1,10 @@
 # Actualiza la imagen de ianews-processor y valida con una corrida real.
-# Mismo criterio adaptado que update-ianews-scraper.yml: sin contenedor
-# persistente, "arrancar" dispara una corrida real de verificación.
+# Mismo criterio adaptado que update-ianews-scraper.yml: "arrancar" dispara
+# una corrida real de verificación. Desde la cola de trabajos (2026-09-24)
+# hay un contenedor persistente, ianews-processor-worker: se reinicia para
+# que tome la imagen nueva y la verificación se encola con prioridad y se
+# espera (`encolar --esperar`). Ver wiki/Decisiones.md § Cola de trabajos
+# del repo ianews.
 #
 # compose.yml es compartido con scraper: todas las operaciones de
 # pull/tag/rollback van scoped a "{{ pieza }}".
@@ -58,10 +62,23 @@
         chdir: "{{ compose_dir }}"
       changed_when: true
 
-    - name: Disparar una corrida real como verificación
+    # Si tenía un trabajo en curso (ej. un paso de la cadena), lo corta y
+    # lo devuelve a la cola: lo retoma con la imagen nueva.
+    - name: Reiniciar ianews-processor-worker con la imagen nueva
       systemd:
-        name: "{{ unit_name }}.service"
-        state: started
+        name: ianews-processor-worker.service
+        state: restarted
+
+    # Prioridad alta para no esperar detrás de lo que ya estaba encolado.
+    # Si el paso termina con error, `encolar --esperar` sale != 0 y se va
+    # al rescue.
+    - name: Encolar una corrida real como verificación y esperarla
+      command: >-
+        docker compose -f compose.yml -f compose.override.yml run --rm {{ pieza }}
+        encolar --esperar --prioridad 10 --origen update-ianews-processor run
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: true
 
     - name: Verificar que la corrida no reportó una tasa de errores anómala
       # Mismo fix que update-ianews-scraper.yml (ver ese playbook): un
@@ -102,10 +119,17 @@
         chdir: "{{ compose_dir }}"
       when: tag_rollback is defined and tag_rollback.rc == 0
 
-    - name: "[ROLLBACK] Corrida de verificación con la imagen anterior"
+    - name: "[ROLLBACK] Reiniciar ianews-processor-worker con la imagen anterior"
       systemd:
-        name: "{{ unit_name }}.service"
-        state: started
+        name: ianews-processor-worker.service
+        state: restarted
+
+    - name: "[ROLLBACK] Encolar una corrida con la imagen anterior"
+      command: >-
+        docker compose -f compose.yml -f compose.override.yml run --rm {{ pieza }}
+        encolar --prioridad 10 --origen update-ianews-processor-rollback run
+      args:
+        chdir: "{{ compose_dir }}"
 
     - name: "[ROLLBACK] Abortar con error tras revertir"
       fail:

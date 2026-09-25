@@ -1,5 +1,5 @@
 [Unit]
-Description=Timer para ianews processor (cada hora, 20' despues del scraper)
+Description=Timer para ianews processor (encola entidades cada hora, 20' despues del scraper)
 Requires=ianews-processor.service
 
 [Timer]

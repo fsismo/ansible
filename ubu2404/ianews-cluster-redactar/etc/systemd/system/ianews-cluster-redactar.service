@@ -1,5 +1,5 @@
 [Unit]
-Description=ianews cluster+redactar+sesgo+imagen+wikidata+build (pasos 2-6 + sitio estático)
+Description=ianews cluster+redactar+sesgo+imagen+wikidata+build: encola el primer paso (los ejecutan los workers)
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
@@ -7,10 +7,12 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory={{ compose_dir }}
-# Los pasos corren SIEMPRE y en orden: un fallo en uno (ej. `imagen`) ya no impide que el
-# builder publique lo que sí esté listo. El servicio termina con error si algo falló, para que siga
-# visible en systemctl/journal. `$$` es el escape de systemd para un `$` literal del shell.
-ExecStart=/bin/sh -c 'fallo=0; for paso in "cluster --fusion-entidades" redactar sesgo imagen wikidata; do /usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor $$paso || fallo=1; done; /usr/bin/systemctl start --wait ianews-builder.service || fallo=1; exit $$fallo'
+# Solo encola `cluster` y termina en segundos. La cadena la arma
+# ianews-processor-worker: al terminar cada paso (ok o error — un fallo no
+# frena al siguiente) encola el próximo, y el último (`build`) lo toma
+# ianews-builder-worker. Ver processor/main.py::CADENA y wiki/Decisiones.md
+# § Cola de trabajos (2026-09-24) del repo ianews.
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --origen ianews-cluster-redactar.timer cluster --fusion-entidades
 TimeoutStartSec=0
 
 [Install]

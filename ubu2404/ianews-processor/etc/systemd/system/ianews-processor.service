@@ -1,5 +1,5 @@
 [Unit]
-Description=ianews processor (corrida unica via docker compose run --rm)
+Description=ianews processor: encola la extraccion de entidades (la ejecuta ianews-processor-worker)
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
@@ -7,7 +7,11 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory={{ compose_dir }}
-ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor
+# Solo encola (`run` = extracción de entidades) y termina en segundos: lo
+# ejecuta ianews-processor-worker.service cuando le toque. Si ya hay uno
+# pendiente no se duplica. Ver wiki/Decisiones.md § Cola de trabajos
+# (2026-09-24) del repo ianews.
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --origen ianews-processor.timer run
 TimeoutStartSec=0
 
 [Install]

@@ -1,11 +1,11 @@
 # Despliega la pieza "builder" de ianews en rbpi4004: genera home/sección/
 # nota estáticos desde Postgres y escribe directo en el volumen que sirve
 # nginx de ianews-web (mismo host, ver
-# ubu2404/ianews-web/opt/docker/ianews-web/compose.yml). No corre solo con
-# timer propio — se invoca vía `systemctl start --wait ianews-builder.service`
-# encadenado al final de ianews-cluster-redactar.service (ver ese repo, y
-# wiki/Decisiones.md § Builder desplegado del repo ianews), o a mano para
-# una corrida puntual.
+# ubu2404/ianews-web/opt/docker/ianews-web/compose.yml). No tiene timer
+# propio: ianews-builder-worker.service (contenedor de larga vida) toma los
+# trabajos `build` de la cola que encola el worker del processor al final de
+# la cadena (ver wiki/Decisiones.md § Cola de trabajos del repo ianews).
+# ianews-builder.service queda para una corrida puntual a mano.
 #
 # Requiere que ianews-web.yml ya se haya corrido una vez (crea
 # /var/docker-data/ianews-web/html con owner 1000) y que
@@ -57,6 +57,14 @@
       group: root
       mode: 0644
 
+  - name: Copiar ianews-builder-worker.service
+    template:
+      src: etc/systemd/system/ianews-builder-worker.service
+      dest: /etc/systemd/system/ianews-builder-worker.service
+      owner: root
+      group: root
+      mode: 0644
+
   - name: Recargar systemd
     systemd:
       daemon_reload: yes
@@ -70,6 +78,13 @@
     args:
       chdir: /opt/docker/ianews-builder
     changed_when: true
+
+  # Reinicio (no solo start) para que tome la imagen recién pulleada.
+  - name: Habilitar y reiniciar ianews-builder-worker.service
+    systemd:
+      name: ianews-builder-worker.service
+      state: restarted
+      enabled: yes
 
   - name: Disparar una corrida de prueba
     systemd:

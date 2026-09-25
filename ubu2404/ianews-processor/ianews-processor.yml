@@ -2,10 +2,14 @@
 # entidades vía Ollama, ver obsidian/Services/Ianews-Scraper.md y
 # wiki/Processor.md del repo ianews).
 #
-# Corrida única programada cada hora, 20' después de scraper.timer, para
-# darle tiempo a terminar una corrida completa antes de que processor lea
-# output/. No tiene datos propios: lee y reescribe in-place los JSON que
-# escribe el scraper (mismo volumen, ver compose.override.yml).
+# Cola de trabajos (2026-09-24, ver wiki/Decisiones.md § Cola de trabajos
+# del repo ianews): ianews-processor.timer (cada hora, 20' después de
+# scraper.timer) solo ENCOLA la extracción de entidades; la ejecuta
+# ianews-processor-worker.service, un contenedor de larga vida que toma de a
+# un trabajo de la tabla `trabajos` de Postgres — así no se pisa con la
+# cadena de ianews-cluster-redactar en alphaprime. No tiene datos propios:
+# lee y reescribe in-place los JSON que escribe el scraper (mismo volumen,
+# ver compose.override.yml).
 #
 # Requiere que ianews-scraper.yml ya se haya corrido una vez (crea
 # /opt/docker/ianews, compose.yml, .env — recursos compartidos) y que el
@@ -86,6 +90,14 @@
       group: root
       mode: 0644
 
+  - name: Copiar ianews-processor-worker.service
+    template:
+      src: etc/systemd/system/ianews-processor-worker.service
+      dest: /etc/systemd/system/ianews-processor-worker.service
+      owner: root
+      group: root
+      mode: 0644
+
   - name: Recargar systemd
     systemd:
       daemon_reload: yes
@@ -108,12 +120,20 @@
       chdir: "{{ compose_dir }}"
     changed_when: true
 
-  # No se aborta el deploy si esto no termina rápido: a diferencia del scraper
-  # (acotado por --max por feed), la primera corrida del processor procesa
-  # TODO el backlog acumulado de output/ sin "entidades" — puede haber
-  # cientos de notas viejas y tardar bastante (~8-15s por nota vía Ollama).
-  # Es un catch-up único; corridas siguientes son incrementales y rápidas.
-  - name: Disparar una corrida (puede tardar si hay backlog sin procesar)
+  # Reinicio (no solo start) para que tome la imagen recién pulleada. Si
+  # tenía un trabajo en curso, lo corta y lo devuelve a la cola.
+  - name: Habilitar y reiniciar ianews-processor-worker.service
+    systemd:
+      name: ianews-processor-worker.service
+      state: restarted
+      enabled: yes
+
+  # Solo encola: no se espera a que termine porque la primera corrida del
+  # processor procesa TODO el backlog acumulado de output/ sin "entidades"
+  # — puede haber cientos de notas viejas y tardar bastante (~8-15s por
+  # nota vía Ollama). Es un catch-up único; corridas siguientes son
+  # incrementales y rápidas.
+  - name: Encolar una corrida (la ejecuta el worker)
     systemd:
       name: "{{ unit_name }}.service"
       state: started
@@ -128,6 +148,6 @@
       msg: >
         {{ scraper_output_dir }}/.last_run_processor.json todavía no existe —
         probablemente sigue procesando el backlog. Verificar con
-        'journalctl -u {{ unit_name }}.service -f' o '{{ do_sh_path }} status'
+        'journalctl -u ianews-processor-worker.service -f' o '{{ do_sh_path }} cola'
         antes de asumir que falló.
     when: not ianews_processor_last_run.stat.exists
