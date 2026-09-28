@@ -1,0 +1,61 @@
+# Despliega el timer de la sección de clima de ianews en rbpi4004: cada hora
+# el service solo ENCOLA `clima` (baja pronóstico y tiempo presente del SMN,
+# genera los consejos por IA de hoy y mañana); lo ejecuta
+# ianews-processor-worker, que al terminar encola un `build-clima` (solo las
+# páginas de clima) para
+# ianews-builder-worker. Ver wiki/Processor.md § Clima (2026-09-28) y
+# wiki/Decisiones.md § Sección de clima con datos del SMN del repo ianews.
+#
+# Requiere que ubu2404/ianews-processor/ianews-processor.yml y
+# ubu2404/ianews-builder/ianews-builder.yml ya se hayan corrido (instalan
+# los dos workers), y una imagen del processor que ya tenga `clima`.
+#
+# Como ianews-cluster-redactar: reusa el servicio "processor" ya desplegado
+# (mismo compose.yml/.env/volumen), solo cambia el comando.
+---
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+
+  vars:
+    pieza: clima
+    unit_name: "{{ proyecto }}-{{ pieza }}"
+    service_file: /etc/systemd/system/{{ unit_name }}.service
+    timer_file: /etc/systemd/system/{{ unit_name }}.timer
+
+  tasks:
+  - name: Copiar ianews-clima.service
+    template:
+      src: etc/systemd/system/ianews-clima.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Copiar ianews-clima.timer
+    template:
+      src: etc/systemd/system/ianews-clima.timer
+      dest: "{{ timer_file }}"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: Habilitar e iniciar {{ unit_name }}.timer
+    systemd:
+      name: "{{ unit_name }}.timer"
+      state: started
+      enabled: yes
+
+  # Solo encola. La primera corrida genera los consejos de las 30 ciudades
+  # (hasta 60 llamadas a Ollama); seguirla con `/opt/docker/ianews/do.sh
+  # cola` o `journalctl -u ianews-processor-worker.service -f`.
+  - name: Encolar una corrida de clima
+    systemd:
+      name: "{{ unit_name }}.service"
+      state: started

@@ -1,0 +1,20 @@
+[Unit]
+Description=ianews clima: encola la bajada del SMN y los consejos por IA (lo ejecuta ianews-processor-worker)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{ compose_dir }}
+# Solo encola `clima` y termina en segundos. Lo ejecuta
+# ianews-processor-worker (usa Ollama en alphaprime, así no se pisa con la
+# cadena ni con las entidades); al terminar encola un `build-clima` (solo
+# las páginas de clima), que toma
+# ianews-builder-worker. Ver wiki/Processor.md § Clima (2026-09-28) del
+# repo ianews.
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --origen ianews-clima.timer clima
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

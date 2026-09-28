@@ -1,0 +1,15 @@
+[Unit]
+Description=Timer para ianews clima (encola cada hora, a los 45')
+Requires=ianews-clima.service
+
+[Timer]
+# El tiempo presente del SMN se actualiza cada hora; el pronóstico, una vez
+# por día. A los 45' para no coincidir con el scraper ni con las entidades
+# (:20). Si el anterior todavía no arrancó, no se duplica (un solo
+# pendiente por acción).
+OnCalendar=*-*-* *:45:00
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
