@@ -1,0 +1,65 @@
+# Despliega Ollama (solo el servidor de inferencia, sin Open-WebUI/ComfyUI/Tika) en blackmamba.
+# Basado en ubu2404/ollama/ollama.yml (stack completo de alphaprime), reducido a un único contenedor.
+# GPU: Strix (Radeon 880M/890M, gfx1150) integrada — ver compose.yml y obsidian/Services/Ollama.md.
+# Requiere el onboarding Ansible del host (usuario `ansible`) antes de poder correrse.
+---
+- hosts: blackmamba.sismonda.local
+  become: yes
+
+  vars:
+    compose_dir: /opt/docker/ollama
+    compose_path: "{{ compose_dir }}/compose.yml"
+    service_file: /etc/systemd/system/ollama.service
+
+  tasks:
+  - name: Include Docker / Docker Compose Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorio {{ compose_dir }}
+    file:
+      path: "{{ compose_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/ollama/compose.yml
+      dest: "{{ compose_path }}"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+    notify: Reiniciar ollama
+
+  - name: Copiar do.sh
+    template:
+      src: opt/docker/ollama/do.sh
+      dest: "{{ compose_dir }}/do.sh"
+      owner: root
+      group: root
+      mode: 0750
+      backup: yes
+
+  - name: Copiar ollama.service
+    template:
+      src: etc/systemd/system/ollama.service
+      dest: "{{ service_file }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Habilitar e iniciar ollama.service
+    systemd:
+      name: ollama.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  handlers:
+  - name: Reiniciar ollama
+    systemd:
+      name: ollama.service
+      state: restarted

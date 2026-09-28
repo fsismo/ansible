@@ -18,7 +18,7 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 |---|---|---|
 | [[Services/Nginx Proxy Manager\|Nginx Proxy Manager]] | rbpi5001 | Reverse proxy + SSL |
 | [[Services/Pi-Hole + WireGuard\|Pi-Hole + WireGuard]] | rbpi4001/2, rbpi5001 | DNS + VPN |
-| [[Services/Ollama\|Ollama]] | alphaprime | Inferencia AI/LLM |
+| [[Services/Ollama\|Ollama]] | alphaprime, blackmamba | Inferencia AI/LLM |
 | [[Services/Plex\|Plex Media Server]] | alphaprime | Streaming multimedia |
 | [[Services/Torrents\|Torrents (Arr stack)]] | rbpi5001 | Descarga automática |
 | [[Services/Nextcloud y WordPress\|Nextcloud & WordPress]] | rbpi5002 | Cloud personal + web |

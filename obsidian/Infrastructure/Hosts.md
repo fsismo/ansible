@@ -14,7 +14,7 @@ Archivo de inventario: `hosts`
 |---|---|---|
 | `alphaprime.sismonda.local` | ✅ Activo | Servidor principal (GPU AMD). **Nodo de control Ansible** (`ansible_connection=local`) |
 | `alphaprime-dev.sismonda.local` | 💤 Comentado | Dev / staging |
-| `blackmamba.sismonda.local` | 💤 Comentado | — |
+| `blackmamba.sismonda.local` | ✅ Activo | GPU AMD. Corre [[../Services/Ollama|Ollama]] (solo el servidor, sin Open-WebUI/ComfyUI/Tika) |
 | `sandbox.sismonda.local` | 💤 Comentado | — |
 
 ### `[rack10inch]` — Rack de 10 pulgadas (Raspberry Pi)
@@ -58,7 +58,8 @@ Archivo de inventario: `hosts`
 ## Diagrama de servicios por host
 
 ```
-alphaprime        → Ollama (AI), Plex, Collabora Online
+alphaprime        → Ollama (AI, stack completo), Plex, Collabora Online
+blackmamba        → Ollama (solo servidor de inferencia)
 rbpi4001          → Pi-Hole+WireGuard (master), SearXNG, NUT server, UniFi
 rbpi4002          → Pi-Hole+WireGuard (replica), Zot Registry (OCI)
 rbpi5001          → Nginx Proxy Manager, Pi-Hole+WireGuard, Torrents (Arr)

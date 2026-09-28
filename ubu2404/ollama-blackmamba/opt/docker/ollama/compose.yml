@@ -1,0 +1,31 @@
+---
+services:
+  ollama:
+    image: ollama/ollama:rocm
+    container_name: ollama
+    hostname: ollama-srv
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    environment:
+      # blackmamba tiene una sola GPU: la Strix (Radeon 880M/890M) integrada,
+      # igual a la que usa el contenedor comfyui en alphaprime (no la discreta RX 9060 XT del ollama de alphaprime)
+      - HSA_OVERRIDE_GFX_VERSION=11.0.0
+      - ROCR_VISIBLE_DEVICES=0
+      # Ollama descarta las iGPU por defecto (blackmamba no tiene otra GPU) — sin esto cae a CPU
+      - OLLAMA_IGPU_ENABLE=1
+      - OLLAMA_FLASH_ATTENTION=true
+      - OLLAMA_KV_CACHE_TYPE=q8_0
+      - OLLAMA_DEBUG=0
+      - OLLAMA_CONTEXT_LENGTH=32768
+    volumes:
+      - ./ollama:/root/.ollama
+    ports:
+      - 11434:11434
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

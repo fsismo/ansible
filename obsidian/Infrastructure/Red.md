@@ -18,6 +18,7 @@ tags: [infraestructura, red, networking, vpn, dns]
 | Host | IP |
 |---|---|
 | `alphaprime` | `10.0.0.11` |
+| `blackmamba` | `10.0.0.13` |
 | `printer` (impresora) | `10.0.0.80` |
 | `www.sismonda.com.ar` | `10.0.0.52` |
 | NFS server | `10.0.0.9` |
