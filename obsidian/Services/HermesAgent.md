@@ -1,8 +1,11 @@
 ---
-tags: [servicio, ai, agente, llm, docker]
+tags: [servicio, ai, agente, llm, docker, desinstalado]
 ---
 
 # Hermes Agent
+
+> [!warning] Desinstalado (2026-09)
+> El servicio fue desinstalado y ya no forma parte de la infraestructura. Se quitó de [[../Home|Home]] y de [[../Playbooks/Actualizaciones Automáticas|Actualizaciones Automáticas]]. Este documento queda solo como referencia histórica.
 
 Agente de IA con API compatible con OpenAI, dashboard web y memoria persistente. Se conecta a Ollama como backend de inferencia.
 

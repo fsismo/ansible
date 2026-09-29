@@ -72,7 +72,7 @@ Algunos modelos requieren una ventana de contexto distinta a la default del serv
 
 | Sufijo | num_ctx | Uso |
 |---|---|---|
-| `-64k` | 65536 | Default general (Hermes Agent, uso normal) — variantes ya creadas; sin shortcut dedicado en `do.sh` (se removió `models_hermes`), usar `_prepare_ctx 65536 64k` manualmente si hace falta una nueva |
+| `-64k` | 65536 | Default general (uso normal) — variantes ya creadas; sin shortcut dedicado en `do.sh` (se removió `models_hermes`), usar `_prepare_ctx 65536 64k` manualmente si hace falta una nueva |
 | `-128k` | 131072 | Pruebas puntuales de contexto extendido (ej. `gemma4:latest-128k`) |
 
 Tras un `models_update`, las variantes con sufijo `-<N>k` se reconstruyen automáticamente a partir del modelo base actualizado, preservando su `num_ctx`.

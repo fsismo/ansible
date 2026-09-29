@@ -26,7 +26,6 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 | [[Services/UniFi\|UniFi Network App]] | rbpi5001 | Gestión de red |
 | [[Services/Syncthing\|Syncthing]] | alphaprime-dev | Sincronización archivos |
 | [[Services/Collabora\|Collabora Online]] | alphaprime | Editor de documentos (Nextcloud) |
-| [[Services/HermesAgent\|Hermes Agent]] | alphaprime | Agente de IA con API OpenAI-compatible |
 | [[Services/Immich\|Immich]] | alphaprime | Backup y gestión de fotos/videos |
 | [[Services/AudioBookShelf\|AudioBookShelf]] | rbpi5002 | Servidor de audiolibros |
 | [[Services/n8n\|n8n]] | alphaprime | Automatización de workflows |
