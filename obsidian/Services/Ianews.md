@@ -1,6 +1,6 @@
 ---
 tags: [servicio, docker, ianews, scraper, processor]
-updated: 2026-09-16
+updated: 2026-10-02
 ---
 
 # Ianews
@@ -165,6 +165,29 @@ LAN, puerto `11434` expuesto a toda la interfaz).
   específico de esta pieza.
 - **Idempotente por presencia**, no por contenido: si una nota "vivo" se
   re-scrapea y cambia el `cuerpo`, el processor no la vuelve a analizar.
+
+---
+
+## Pieza: Resumen en video
+
+Resumen diario de noticias en video (YouTube Shorts). Ver
+`/mnt/storage/Code/ianews/wiki/Resumen.md`. Es la única pieza de ianews
+fuera de rbpi4004.
+
+| | |
+|---|---|
+| Playbook | `ubu2404/ianews-resumen/ianews-resumen.yml` (dos plays: rbpi4003 y rbpi4004) |
+| Imagen | `registry.sismonda.local:5000/ianews-resumen:latest` (Piper + ffmpeg) |
+| rbpi4003 | `/opt/docker/ianews-resumen/` (compose, `.env`, `secrets/youtube-token.json`), `ianews-resumen-worker.service` (larga vida, toma `resumen-video` de la cola) |
+| rbpi4004 | `ianews-resumen.service` + `.timer` (20:00, solo encola `resumen` para el worker del processor) |
+| Salida | `/var/docker-data/ianews-resumen/salida/<fecha>/` en rbpi4003 (30 días) |
+| Dependencias | Postgres de rbpi4004 por red (5432), `https://ianews.fyi` (imágenes y sitemap), API de YouTube |
+
+Requisito en rbpi4003: la CA local (`utils/local-ca/local-ca.yml --limit
+rbpi4003.sismonda.local`) para bajar del registry. El token OAuth sale de
+`/mnt/storage/Code/ianews/.secrets/youtube-token.json` del controller.
+Videos en **privado** (`ianews_resumen_youtube_privacidad`) hasta que Google
+audite el proyecto de la API.
 
 ---
 

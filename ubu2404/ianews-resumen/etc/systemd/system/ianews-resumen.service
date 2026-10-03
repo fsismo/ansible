@@ -1,0 +1,18 @@
+[Unit]
+Description=ianews resumen: encola el guion del resumen diario en video (lo ejecuta ianews-processor-worker)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{ compose_dir }}
+# Solo encola `resumen` y termina en segundos. Lo ejecuta
+# ianews-processor-worker (usa Ollama en alphaprime, así no se pisa con la
+# cadena); al terminar encola `resumen-video`, que toma
+# ianews-resumen-worker en rbpi4003. Ver wiki/Resumen.md del repo ianews.
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --origen ianews-resumen.timer resumen
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

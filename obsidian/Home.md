@@ -31,6 +31,7 @@ Repositorio de automatización Ansible para la red `sismonda.local` / `sismonda.
 | [[Services/n8n\|n8n]] | alphaprime | Automatización de workflows |
 | [[Services/Zot\|Zot Registry]] | rbpi4002 | Registro OCI privado de contenedores |
 | [[Services/Ianews\|Ianews (scraper + processor)]] | rbpi4004 | Scraping y análisis de entidades del proyecto ianews |
+| [[Services/Ianews\|Ianews (resumen en video)]] | rbpi4003 | Voz, video y subida a YouTube del resumen diario de ianews |
 
 ### Playbooks
 - [[Playbooks/Setup Base|Setup Base]] — herramientas comunes, Docker, NFS

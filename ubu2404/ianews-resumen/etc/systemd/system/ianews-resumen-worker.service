@@ -1,0 +1,22 @@
+[Unit]
+Description=ianews resumen worker (ejecuta los `resumen-video` de la cola de trabajos)
+# El worker del processor (rbpi4004) encola `resumen-video` al terminar el
+# guion (`resumen`); este lo toma, arma el video y lo sube a YouTube. La
+# cola es la tabla `trabajos` del Postgres de rbpi4004, por red. Ver
+# wiki/Resumen.md del repo ianews.
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/docker/ianews-resumen
+ExecStartPre=-/usr/bin/docker rm -f ianews-resumen-worker
+ExecStart=/usr/bin/docker compose -f compose.yml run --rm --name ianews-resumen-worker resumen worker
+ExecStop=/usr/bin/docker stop -t 30 ianews-resumen-worker
+TimeoutStopSec=60
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

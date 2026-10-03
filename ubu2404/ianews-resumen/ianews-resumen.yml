@@ -1,0 +1,146 @@
+# Despliega el resumen diario de ianews en video (YouTube Shorts). Ver
+# wiki/Resumen.md del repo ianews.
+#
+# Dos partes, en dos hosts:
+#   - rbpi4003: la pieza "resumen" (imagen propia con Piper y ffmpeg) como
+#     worker de larga vida, ianews-resumen-worker.service. Toma los
+#     `resumen-video` de la cola (tabla `trabajos` del Postgres de rbpi4004,
+#     por red), lee el guion con voz sintética, arma el video y lo sube.
+#   - rbpi4004: ianews-resumen.timer, que a las 20 solo ENCOLA `resumen`
+#     (el guion, con Ollama) para ianews-processor-worker; al terminar, ese
+#     worker encola `resumen-video`.
+#
+# Requiere: la CA local en rbpi4003 para bajar del registry
+# (utils/local-ca/local-ca.yml --limit rbpi4003.sismonda.local), una imagen
+# del processor que ya tenga `resumen` (migración 014), y el token OAuth del
+# canal en /mnt/storage/Code/ianews/.secrets/youtube-token.json (lo genera
+# autorizar_youtube.py, ver wiki/Resumen.md § YouTube).
+---
+- hosts: rbpi4003.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+    - /mnt/storage/ansible/ubu2404/ianews-web/vars.yml
+
+  vars:
+    resumen_dir: /opt/docker/ianews-resumen
+    resumen_data_dir: /var/docker-data/ianews-resumen
+    # "private" hasta que Google audite el proyecto de la API de YouTube:
+    # sin auditoría, la API no deja publicar en público.
+    ianews_resumen_youtube_privacidad: private
+    youtube_token_src: /mnt/storage/Code/ianews/.secrets/youtube-token.json
+
+  tasks:
+  - name: Include Docker Task
+    ansible.builtin.include_tasks: "../modules/docker.yml"
+
+  - name: Crear directorios de la pieza
+    file:
+      path: "{{ item.path }}"
+      state: directory
+      owner: "{{ item.owner }}"
+      group: "{{ item.owner }}"
+      mode: "{{ item.mode }}"
+    loop:
+      - { path: "{{ resumen_dir }}", owner: root, mode: "0755" }
+      # El contenedor corre como uid 1000 (usuario `app` del Dockerfile).
+      - { path: "{{ resumen_dir }}/secrets", owner: "1000", mode: "0700" }
+      - { path: "{{ resumen_data_dir }}/salida", owner: "1000", mode: "0755" }
+
+  - name: Copiar el token OAuth de YouTube
+    copy:
+      src: "{{ youtube_token_src }}"
+      dest: "{{ resumen_dir }}/secrets/youtube-token.json"
+      owner: "1000"
+      group: "1000"
+      mode: 0600
+
+  - name: Copiar compose.yml
+    template:
+      src: opt/docker/ianews-resumen/compose.yml
+      dest: "{{ resumen_dir }}/compose.yml"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
+  - name: Copiar .env
+    template:
+      src: opt/docker/ianews-resumen/env.j2
+      dest: "{{ resumen_dir }}/.env"
+      owner: root
+      group: root
+      mode: 0640
+      backup: yes
+
+  - name: Copiar ianews-resumen-worker.service
+    template:
+      src: etc/systemd/system/ianews-resumen-worker.service
+      dest: /etc/systemd/system/ianews-resumen-worker.service
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  # Sin esto un re-run toma la imagen vieja cacheada (mismo criterio que
+  # ianews-builder.yml).
+  - name: Pull de la última imagen de resumen
+    command: docker compose -f compose.yml pull resumen
+    args:
+      chdir: "{{ resumen_dir }}"
+    changed_when: true
+
+  # Verifica la imagen, el .env y el acceso a Postgres por red sin armar ni
+  # subir nada: para una fecha sin guion solo consulta y termina.
+  - name: Corrida de verificación (sin guion, no sube nada)
+    command: docker compose -f compose.yml run --rm resumen resumen-video --fecha 2000-01-01
+    args:
+      chdir: "{{ resumen_dir }}"
+    register: ianews_resumen_test
+    changed_when: false
+    failed_when: "'no hay guion' not in ianews_resumen_test.stdout"
+
+  # Reinicio (no solo start) para que tome la imagen recién pulleada.
+  - name: Habilitar y reiniciar ianews-resumen-worker.service
+    systemd:
+      name: ianews-resumen-worker.service
+      state: restarted
+      enabled: yes
+
+- hosts: rbpi4004.sismonda.local
+  become: yes
+
+  vars_files:
+    - /mnt/storage/ansible/ubu2404/ianews/vars.yml
+
+  vars:
+    pieza: resumen
+    unit_name: "{{ proyecto }}-{{ pieza }}"
+
+  tasks:
+  - name: Copiar ianews-resumen.service y .timer
+    template:
+      src: etc/systemd/system/{{ item }}
+      dest: /etc/systemd/system/{{ item }}
+      owner: root
+      group: root
+      mode: 0644
+    loop:
+      - "{{ unit_name }}.service"
+      - "{{ unit_name }}.timer"
+
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  # Sin corrida de prueba: encolar ahora subiría un video. La primera es a
+  # las 20; para probar a mano: `do.sh` o `systemctl start ianews-resumen`.
+  - name: Habilitar e iniciar {{ unit_name }}.timer
+    systemd:
+      name: "{{ unit_name }}.timer"
+      state: started
+      enabled: yes

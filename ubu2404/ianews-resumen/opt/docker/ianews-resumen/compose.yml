@@ -1,0 +1,17 @@
+# Pieza "resumen" de ianews: el resumen diario de noticias en video
+# (YouTube Shorts). Lee el guion que deja el paso `resumen` del processor en
+# Postgres (rbpi4004), lo lee con voz sintética (Piper), arma el video con
+# ffmpeg y lo sube a YouTube. Ver wiki/Resumen.md del repo ianews.
+#
+# Sin `up -d`: el worker es un `docker compose run` de larga vida lanzado
+# por ianews-resumen-worker.service (mismo patrón que ianews-builder-worker).
+services:
+  resumen:
+    image: registry.sismonda.local:5000/ianews-resumen:latest
+    env_file: .env
+    volumes:
+      # Un directorio por día con el video, el audio y los intermedios (se
+      # borran solos a los 30 días).
+      - /var/docker-data/ianews-resumen/salida:/salida
+      # Token OAuth del canal de YouTube (solo lectura).
+      - ./secrets:/secrets:ro
