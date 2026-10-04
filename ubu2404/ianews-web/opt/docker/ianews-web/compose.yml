@@ -31,7 +31,13 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
+    # --protocol http2 (TCP) en vez de QUIC (UDP, el default): el 2026-10-04
+    # las 4 conexiones QUIC cayeron juntas ("timeout: no recent network
+    # activity") y los redials fallaban; mientras tanto los pedidos que no
+    # estaban en la caché de Cloudflare tardaban 12-20 s, con nginx
+    # respondiendo en 2-4 ms localmente. HTTP/2 no depende de que la red
+    # deje pasar UDP.
+    command: tunnel --no-autoupdate --protocol http2 run
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
