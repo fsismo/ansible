@@ -11,7 +11,11 @@ WorkingDirectory={{ compose_dir }}
 # ejecuta ianews-processor-worker.service cuando le toque. Si ya hay uno
 # pendiente no se duplica. Ver wiki/Decisiones.md § Cola de trabajos
 # (2026-09-24) del repo ianews.
-ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --origen ianews-processor.timer run
+# Prioridad -1: si hay un paso de la cadena cluster→build esperando, va
+# primero. Las entidades recién las usa el cluster de la cadena siguiente
+# (2 h después), así que demorar el run hasta que termine la cadena no
+# atrasa ninguna noticia; intercalarlo atrasaba la cadena ~10 min.
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --prioridad -1 --origen ianews-processor.timer run
 TimeoutStartSec=0
 
 [Install]

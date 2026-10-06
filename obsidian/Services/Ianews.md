@@ -132,7 +132,7 @@ qué falta (clustering, redacción, sesgo — no empezados).
 | Playbook de despliegue | `ubu2404/ianews-processor/ianews-processor.yml` |
 | Playbook de actualización | `ubu2404/ianews-processor/update-ianews-processor.yml` |
 | Cron de actualización | `ubu2404/ianews-processor/cron-update-ianews-processor.yml` (sábados 23:15) |
-| Systemd | `ianews-processor.service` (`oneshot`, `docker compose run --rm processor`) + `ianews-processor.timer` (diario/horario a `:20`, 20' después del scraper) |
+| Systemd | `ianews-processor.service` (`oneshot`, encola `run` con `--prioridad -1` para no frenar la cadena; ver wiki/Decisiones.md § La cadena tiene prioridad sobre el run horario del repo ianews) + `ianews-processor.timer` (diario/horario a `:20`, 20' después del scraper) |
 
 **No tiene volumen propio**: lee y reescribe **in-place** los mismos JSON del
 scraper (`/var/docker-data/ianews/scraper/output`, montado igual en ambos
