@@ -26,6 +26,7 @@ El resto de esta página documenta el stack completo de **alphaprime**. Ver [[#I
 | **Imagen Tika** | `apache/tika:latest-full` |
 | **Playbook** | `ubu2404/ollama/ollama.yml` |
 | **Compose** | `/opt/docker/ollama/compose.yml` |
+| **Update** | `ubu2404/ollama/update-ollama.yml` — cron domingos 02:50 (ver [[#Ventana de mantenimiento]]) |
 
 ## Puertos
 
@@ -129,6 +130,30 @@ Servicio de extracción de contenido para Open-WebUI. Permite indexar y consulta
 - Sin puerto expuesto al host (solo interno en `ai-stack`)
 - Sin estado: no requiere volúmenes persistentes
 - Integración configurada con `CONTENT_EXTRACTION_ENGINE=tika` y `TIKA_SERVER_URL=http://tika:9998`
+
+## Ventana de mantenimiento
+
+**Domingos 02:50-03:20** (hora Argentina). El processor de ianews (rbpi4004) usa
+`ollama` y `comfyui` de este host todo el día: la cadena cada 2 h (:01 de las
+horas pares), `run` cada hora (:20), `clima` cada hora (:45) y `resumen`
+(20:00). Medido sobre una semana de trabajos (2026-09-29 a 2026-10-06), la
+franja 02:50-03:20 no tuvo ningún trabajo que use el modelo, ningún día. A
+esa hora tampoco hay volumen de noticias.
+
+`update-ollama.yml` (cron en `/etc/cron.d/update-ollama`) actualiza todo el
+compose (ollama, comfyui, open-webui, tika). Diferencias con el flujo
+estándar de [[../Convenciones#Playbooks de actualización|Playbooks de actualización]]:
+
+- **El pull va antes del stop**: las imágenes ROCm pesan varios GB; bajarlas
+  con los contenedores corriendo deja el corte en stop + start (~1-2 min).
+  El tag `:_rollback` se toma antes del pull.
+- **Verificaciones específicas**: `/api/tags` responde y lista modelos,
+  `OLLAMA_CONTEXT_LENGTH` sigue en 32768 dentro del contenedor (ver la nota
+  de `OLLAMA_NUM_CTX` arriba) y `/system_stats` de ComfyUI responde.
+
+Si se pasa de las 03:20, el `run` de ianews de esa hora falla sus llamadas y
+reintenta en la corrida siguiente: la cadena no se corta ante un fallo.
+Open-WebUI también se reinicia (está en el mismo compose).
 
 ## Gestión con `do.sh`
 

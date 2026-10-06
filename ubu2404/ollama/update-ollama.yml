@@ -1,0 +1,144 @@
+# Actualiza el stack de Ollama en alphaprime (ollama, comfyui, open-webui,
+# tika) y verifica que quedó corriendo. Si la verificación falla, revierte
+# automáticamente al estado anterior.
+#
+# Corre en la ventana de mantenimiento de ianews (domingos 02:50-03:20): el
+# processor de ianews en rbpi4004 usa ollama y comfyui de este host, y esa
+# franja no tuvo trabajos en toda la semana medida (ver
+# obsidian/Services/Ollama.md § Ventana de mantenimiento).
+#
+# A diferencia del flujo estándar, el pull va ANTES de parar el servicio:
+# las imágenes ROCm pesan varios GB y bajarlas con los contenedores
+# corriendo deja el corte en stop + start (~1-2 min). El tag de rollback se
+# toma antes del pull, así que sigue apuntando a las imágenes viejas.
+---
+- hosts: alphaprime.sismonda.local
+  become: yes
+  any_errors_fatal: true
+  serial: 1
+
+  vars:
+    compose_dir: /opt/docker/ollama
+    compose_path: "{{ compose_dir }}/compose.yml"
+    log_file: /var/log/ansible-update-ollama.log
+
+  tasks:
+
+  - block:
+
+    - name: Registrar versiones previas al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update iniciado ===" >> {{ log_file }}
+        docker compose ps --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Copiar compose.yml actualizado
+      template:
+        src: opt/docker/ollama/compose.yml
+        dest: "{{ compose_path }}"
+        owner: root
+        group: root
+        mode: 0640
+        backup: yes
+      register: compose_copy
+
+    - name: Etiquetar imágenes actuales como rollback
+      shell: |
+        docker compose config --images | while IFS= read -r image; do
+          id=$(docker inspect --format '{% raw %}{{.Id}}{% endraw %}' "$image" 2>/dev/null) || continue
+          docker tag "$id" "${image%%:*}:_rollback"
+        done
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+      register: tag_rollback
+
+    - name: Pull de las últimas imágenes (con los contenedores todavía corriendo)
+      community.docker.docker_compose_v2_pull:
+        project_src: "{{ compose_dir }}"
+
+    - name: Parar el servicio
+      systemd:
+        name: ollama.service
+        state: stopped
+
+    - name: Iniciar el servicio
+      systemd:
+        name: ollama.service
+        state: started
+
+    - name: Verificar que todos los contenedores están running
+      shell: >-
+        docker compose ps --format json |
+        python3 -c "import sys,json; bad=[c['Name'] for c in (json.loads(l) for l in sys.stdin if l.strip()) if c.get('State')!='running']; sys.exit('Contenedores no running: '+', '.join(bad)) if bad else None"
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Verificar que la API de Ollama responde y lista los modelos
+      uri:
+        url: http://localhost:11434/api/tags
+        return_content: yes
+      register: ollama_tags
+      until: ollama_tags.status == 200 and (ollama_tags.json.models | length) > 0
+      retries: 12
+      delay: 10
+
+    - name: Verificar que OLLAMA_CONTEXT_LENGTH sigue aplicado en el contenedor
+      shell: docker exec ollama printenv OLLAMA_CONTEXT_LENGTH
+      register: ollama_ctx
+      changed_when: false
+      failed_when: ollama_ctx.stdout != "32768"
+
+    - name: Verificar que ComfyUI responde
+      uri:
+        url: http://localhost:8188/system_stats
+      register: comfyui_stats
+      until: comfyui_stats.status == 200
+      retries: 18
+      delay: 10
+
+    - name: Registrar versiones posteriores al update
+      shell: |
+        echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Update completado ===" >> {{ log_file }}
+        docker compose ps --format "table {% raw %}{{.Name}}\t{{.Image}}\t{{.Status}}{% endraw %}" >> {{ log_file }} 2>/dev/null || true
+        docker exec ollama ollama --version >> {{ log_file }} 2>/dev/null || true
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    rescue:
+
+    - name: "[ROLLBACK] Parar el servicio"
+      systemd:
+        name: ollama.service
+        state: stopped
+
+    - name: "[ROLLBACK] Restaurar compose anterior desde backup"
+      copy:
+        src: "{{ compose_copy.backup_file }}"
+        dest: "{{ compose_path }}"
+        remote_src: yes
+      when: compose_copy.backup_file is defined
+
+    - name: "[ROLLBACK] Restaurar imágenes previas"
+      shell: |
+        docker compose config --images | while IFS= read -r image; do
+          docker tag "${image%%:*}:_rollback" "$image" 2>/dev/null || true
+        done
+      args:
+        chdir: "{{ compose_dir }}"
+      when: tag_rollback is defined and tag_rollback.rc == 0
+
+    - name: "[ROLLBACK] Iniciar servicio con estado anterior"
+      systemd:
+        name: ollama.service
+        state: started
+
+    - name: "[ROLLBACK] Abortar con error tras revertir"
+      fail:
+        msg: >
+          La verificación falló. Se revirtió al estado anterior.
+          Revisá {{ log_file }} antes de volver a ejecutar.

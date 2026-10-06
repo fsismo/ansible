@@ -26,6 +26,7 @@ Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de 
 | Ianews Scraper | Sábados 23:45 | `/etc/cron.d/update-ianews-scraper` | `/var/log/ansible-update-ianews-scraper.log` |
 | Ianews Processor | Sábados 23:15 | `/etc/cron.d/update-ianews-processor` | `/var/log/ansible-update-ianews-processor.log` |
 | Ollama Blackmamba | Sábados 22:50 | `/etc/cron.d/update-ollama-blackmamba` | `/var/log/ansible-update-ollama-blackmamba.log` |
+| Ollama (alphaprime) | Domingos 02:50 | `/etc/cron.d/update-ollama` | `/var/log/ansible-update-ollama.log` |
 
 ## Playbooks
 
@@ -41,6 +42,7 @@ Ver [[../Convenciones#Playbooks de actualización|Convenciones → Playbooks de 
 | Ianews Scraper | `ubu2404/ianews-scraper/` | `update-ianews-scraper.yml` | `cron-update-ianews-scraper.yml` |
 | Ianews Processor | `ubu2404/ianews-processor/` | `update-ianews-processor.yml` | `cron-update-ianews-processor.yml` |
 | Ollama Blackmamba | `ubu2404/ollama-blackmamba/` | `update-ollama-blackmamba.yml` | `cron-update-ollama-blackmamba.yml` |
+| Ollama (alphaprime) | `ubu2404/ollama/` | `update-ollama.yml` | `cron-update-ollama.yml` |
 
 ## Aplicar un cron job
 
