@@ -1,6 +1,8 @@
 [Unit]
 Description=Timer para ianews scraper (cada 60 min)
-Requires=ianews-scraper.service
+# Sin Requires= al service: con él, parar o cortar una corrida colgada
+# (TimeoutStartSec) también apaga el timer y no vuelve a disparar.
+# Unit= alcanza para asociarlos.
 
 [Timer]
 Unit=ianews-scraper.service

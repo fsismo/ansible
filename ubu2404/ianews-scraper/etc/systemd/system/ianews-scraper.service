@@ -8,7 +8,13 @@ Wants=network-online.target
 Type=oneshot
 WorkingDirectory={{ compose_dir }}
 ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm scraper
-TimeoutStartSec=0
+# Tope por corrida: menos que el intervalo del timer (60 min). Sin esto, una
+# conexión colgada sin timeout dejó la corrida del 2026-10-07 trabada 29 h y
+# el timer no volvió a disparar (no arranca otra mientras esta siga activa).
+TimeoutStartSec=50min
+# Al matar `docker compose run` el contenedor sigue vivo: borrarlo acá
+# (solo los "run" de scraper de este compose, no los de otros proyectos).
+ExecStopPost=/bin/sh -c 'docker ps -q --filter label=com.docker.compose.oneoff=True --filter label=com.docker.compose.service=scraper --filter label=com.docker.compose.project.working_dir={{ compose_dir }} | xargs -r docker rm -f'
 
 [Install]
 WantedBy=multi-user.target
