@@ -6,7 +6,7 @@
 #     worker de larga vida, ianews-resumen-worker.service. Toma los
 #     `resumen-video` de la cola (tabla `trabajos` del Postgres de rbpi4004,
 #     por red), lee el guion con voz sintética, arma el video y lo sube.
-#   - rbpi4004: ianews-resumen.timer, que a las 20 solo ENCOLA `resumen`
+#   - rbpi4004: ianews-resumen.timer, que a las 18 solo ENCOLA `resumen`
 #     (el guion, con Ollama) para ianews-processor-worker; al terminar, ese
 #     worker encola `resumen-video`.
 #
@@ -138,7 +138,7 @@
       daemon_reload: yes
 
   # Sin corrida de prueba: encolar ahora subiría un video. La primera es a
-  # las 20; para probar a mano: `do.sh` o `systemctl start ianews-resumen`.
+  # las 18; para probar a mano: `do.sh` o `systemctl start ianews-resumen`.
   - name: Habilitar e iniciar {{ unit_name }}.timer
     systemd:
       name: "{{ unit_name }}.timer"

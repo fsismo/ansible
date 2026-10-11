@@ -1,12 +1,16 @@
 [Unit]
-Description=Timer para ianews resumen (encola el resumen en video, todos los días a las 20)
+Description=Timer para ianews resumen (encola el resumen en video, todos los días a las 18)
 Requires=ianews-resumen.service
 
 [Timer]
-# A las 20 ya está la mayor parte de la agenda del día. Las noticias que
-# entran después quedan fuera (el resumen es de las que empezaron ese día).
-OnCalendar=*-*-* 20:00:00
-# Sin Persistent: si el host estuvo apagado a las 20, no se recupera al
+# A las 18 (desde 2026-10-10, pedido del usuario; antes a las 20) ya está
+# la mayor parte de la agenda del día. Las noticias que entran después
+# quedan fuera (el resumen es de las que empezaron ese día). En punto y no
+# 18:30: entra a la cola antes que la cadena de las 18:01 y usa lo que
+# publicó el build de la de las 16, así el video no pide imágenes que
+# todavía no se publicaron.
+OnCalendar=*-*-* 18:00:00
+# Sin Persistent: si el host estuvo apagado a las 18, no se recupera al
 # arrancar (pasada la medianoche armaría el resumen del día siguiente).
 
 [Install]
