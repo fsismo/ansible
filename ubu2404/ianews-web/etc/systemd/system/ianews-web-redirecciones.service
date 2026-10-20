@@ -1,0 +1,13 @@
+# La dispara ianews-web-redirecciones.path. `nginx -t` primero: si el map
+# viniera roto, nginx sigue con la config anterior y la unidad queda en
+# failed (journalctl -u ianews-web-redirecciones).
+[Unit]
+Description=ianews-web: nginx -t && nginx -s reload (map de redirecciones)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/docker/ianews-web/
+ExecStart=/usr/bin/docker compose exec -T nginx nginx -t
+ExecStart=/usr/bin/docker compose exec -T nginx nginx -s reload

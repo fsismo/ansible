@@ -118,9 +118,30 @@
       mode: 0644
       backup: yes
 
+  - name: Copiar ianews-web-redirecciones.{path,service}
+    # Recarga nginx cuando el Builder cambia el map de redirecciones 301
+    # (ver nginx/default.conf).
+    template:
+      src: "etc/systemd/system/{{ item }}"
+      dest: "/etc/systemd/system/{{ item }}"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    loop:
+      - ianews-web-redirecciones.path
+      - ianews-web-redirecciones.service
+
   - name: Habilitar e iniciar ianews-web.service
     systemd:
       name: ianews-web.service
+      state: started
+      daemon_reload: yes
+      enabled: yes
+
+  - name: Habilitar e iniciar ianews-web-redirecciones.path
+    systemd:
+      name: ianews-web-redirecciones.path
       state: started
       daemon_reload: yes
       enabled: yes

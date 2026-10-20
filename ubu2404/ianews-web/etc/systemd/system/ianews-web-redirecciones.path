@@ -1,0 +1,11 @@
+# Recarga nginx cuando el Builder reescribe el map de redirecciones 301
+# (lo escribe atómico y solo si cambió, ver builder/render.py del repo
+# ianews). Ver opt/docker/ianews-web/nginx/default.conf.
+[Unit]
+Description=ianews-web: recargar nginx al cambiar el map de redirecciones
+
+[Path]
+PathChanged=/var/docker-data/ianews-web/html/.redirecciones.map
+
+[Install]
+WantedBy=multi-user.target
