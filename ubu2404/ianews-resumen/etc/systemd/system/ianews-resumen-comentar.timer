@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer para ianews resumen-comentar (todos los días a las 18:25, después de que se publica el Short)
+# Sin Requires=: ver ianews-resumen-semana.timer.
+
+[Timer]
+OnCalendar=*-*-* 18:25:00
+# Con Persistent: si el host estaba apagado, comentar tarde sirve igual.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

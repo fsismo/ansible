@@ -1,0 +1,15 @@
+[Unit]
+Description=ianews resumen-comentar: deja la pregunta en el Short del día ya publicado
+# YouTube no deja comentar un video privado o programado (403), así que la pregunta no
+# se pone al subirlo sino después de las 18:15. Si el video todavía no es
+# público o ya la tiene, no hace nada. Ver wiki/Resumen.md § YouTube
+# del repo ianews.
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/docker/ianews-resumen
+ExecStart=/usr/bin/docker compose -f compose.yml run --rm resumen resumen-comentar
+TimeoutStartSec=0

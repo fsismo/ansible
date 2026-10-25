@@ -29,7 +29,9 @@
     resumen_dir: /opt/docker/ianews-resumen
     resumen_data_dir: /var/docker-data/ianews-resumen
     # "private" hasta que Google audite el proyecto de la API de YouTube:
-    # sin auditoría, la API no deja publicar en público.
+    # sin auditoría, la API no deja subir en público. Programado (publishAt)
+    # sí se publica solo: así salen el Short (18:15) y el semanal (domingos
+    # 11:30); esto solo vale para lo que sube sin programar.
     ianews_resumen_youtube_privacidad: private
     youtube_token_src: /mnt/storage/Code/ianews/.secrets/youtube-token.json
 
@@ -87,6 +89,8 @@
       - ianews-resumen-worker.service
       - ianews-resumen-semana-comentar.service
       - ianews-resumen-semana-comentar.timer
+      - ianews-resumen-comentar.service
+      - ianews-resumen-comentar.timer
 
   - name: Recargar systemd
     systemd:
@@ -117,13 +121,16 @@
       state: restarted
       enabled: yes
 
-  # La pregunta del semanal, una vez publicado (YouTube no deja comentar un
-  # video programado).
-  - name: Habilitar e iniciar ianews-resumen-semana-comentar.timer
+  # La pregunta del Short y la del semanal, una vez publicados (YouTube no
+  # deja comentar un video privado o programado).
+  - name: Habilitar e iniciar los timers de los comentarios
     systemd:
-      name: ianews-resumen-semana-comentar.timer
+      name: "{{ item }}"
       state: started
       enabled: yes
+    loop:
+      - ianews-resumen-comentar.timer
+      - ianews-resumen-semana-comentar.timer
 
 - hosts: rbpi4004.sismonda.local
   become: yes
