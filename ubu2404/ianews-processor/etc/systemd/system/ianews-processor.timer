@@ -1,6 +1,7 @@
 [Unit]
 Description=Timer para ianews processor (encola entidades cada hora, 20' despues del scraper)
-Requires=ianews-processor.service
+# Sin Requires=: arrancar el timer (en un deploy o al reiniciar) arrancaría
+# también el servicio fuera de horario. Ver ianews-resumen.timer.
 
 [Timer]
 Unit=ianews-processor.service

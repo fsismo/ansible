@@ -1,6 +1,7 @@
 [Unit]
 Description=Timer para ianews clima (encola cada hora, a los 45')
-Requires=ianews-clima.service
+# Sin Requires=: arrancar el timer (en un deploy o al reiniciar) arrancaría
+# también el servicio fuera de horario. Ver ianews-resumen.timer.
 
 [Timer]
 # El tiempo presente del SMN se actualiza cada hora; el pronóstico, una vez

@@ -1,6 +1,7 @@
 [Unit]
 Description=Timer para ianews cluster+redactar+sesgo+imagen+build (encola cada 2h)
-Requires=ianews-cluster-redactar.service
+# Sin Requires=: arrancar el timer (en un deploy o al reiniciar) arrancaría
+# también el servicio fuera de horario. Ver ianews-resumen.timer.
 
 [Timer]
 # Desde la cola de trabajos (2026-09-24) el service solo encola y termina en

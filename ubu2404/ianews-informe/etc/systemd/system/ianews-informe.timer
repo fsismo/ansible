@@ -1,6 +1,7 @@
 [Unit]
 Description=Timer para ianews informe de URLs (cada 48h)
-Requires=ianews-informe.service
+# Sin Requires=: arrancar el timer (en un deploy o al reiniciar) arrancaría
+# también el servicio fuera de horario. Ver ianews-resumen.timer.
 
 [Timer]
 # Intervalo real (no calendario): 48h desde la última corrida, no un
