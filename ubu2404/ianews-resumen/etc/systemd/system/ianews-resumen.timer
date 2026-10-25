@@ -1,6 +1,9 @@
 [Unit]
 Description=Timer para ianews resumen (encola el resumen en video, todos los días a las 18)
-Requires=ianews-resumen.service
+# Sin Requires=ianews-resumen.service: con esa línea, arrancar el timer (al
+# habilitarlo en un deploy o al reiniciar el host) arranca también el
+# servicio y encola el resumen fuera de horario (pasó el 2026-10-25 con el
+# semanal). El timer activa el .service de su mismo nombre sin declararlo.
 
 [Timer]
 # A las 18 (desde 2026-10-10, pedido del usuario; antes a las 20) ya está
