@@ -76,13 +76,17 @@
       mode: 0640
       backup: yes
 
-  - name: Copiar ianews-resumen-worker.service
+  - name: Copiar ianews-resumen-worker.service y el comentario del semanal
     template:
-      src: etc/systemd/system/ianews-resumen-worker.service
-      dest: /etc/systemd/system/ianews-resumen-worker.service
+      src: etc/systemd/system/{{ item }}
+      dest: /etc/systemd/system/{{ item }}
       owner: root
       group: root
       mode: 0644
+    loop:
+      - ianews-resumen-worker.service
+      - ianews-resumen-semana-comentar.service
+      - ianews-resumen-semana-comentar.timer
 
   - name: Recargar systemd
     systemd:
@@ -111,6 +115,14 @@
     systemd:
       name: ianews-resumen-worker.service
       state: restarted
+      enabled: yes
+
+  # La pregunta del semanal, una vez publicado (YouTube no deja comentar un
+  # video programado).
+  - name: Habilitar e iniciar ianews-resumen-semana-comentar.timer
+    systemd:
+      name: ianews-resumen-semana-comentar.timer
+      state: started
       enabled: yes
 
 - hosts: rbpi4004.sismonda.local
