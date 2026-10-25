@@ -8,7 +8,9 @@
 #     por red), lee el guion con voz sintética, arma el video y lo sube.
 #   - rbpi4004: ianews-resumen.timer, que a las 18 solo ENCOLA `resumen`
 #     (el guion, con Ollama) para ianews-processor-worker; al terminar, ese
-#     worker encola `resumen-video`.
+#     worker encola `resumen-video`. Y ianews-resumen-semana.timer, los
+#     domingos a las 9:30, lo mismo con `resumen-semana` →
+#     `resumen-semana-video` (el video horizontal de la semana).
 #
 # Requiere: la CA local en rbpi4003 para bajar del registry
 # (utils/local-ca/local-ca.yml --limit rbpi4003.sismonda.local), una imagen
@@ -122,7 +124,7 @@
     unit_name: "{{ proyecto }}-{{ pieza }}"
 
   tasks:
-  - name: Copiar ianews-resumen.service y .timer
+  - name: Copiar los .service y .timer del resumen diario y del semanal
     template:
       src: etc/systemd/system/{{ item }}
       dest: /etc/systemd/system/{{ item }}
@@ -132,6 +134,8 @@
     loop:
       - "{{ unit_name }}.service"
       - "{{ unit_name }}.timer"
+      - "{{ unit_name }}-semana.service"
+      - "{{ unit_name }}-semana.timer"
 
   - name: Recargar systemd
     systemd:
@@ -139,8 +143,11 @@
 
   # Sin corrida de prueba: encolar ahora subiría un video. La primera es a
   # las 18; para probar a mano: `do.sh` o `systemctl start ianews-resumen`.
-  - name: Habilitar e iniciar {{ unit_name }}.timer
+  - name: Habilitar e iniciar los timers del resumen diario y del semanal
     systemd:
-      name: "{{ unit_name }}.timer"
+      name: "{{ item }}"
       state: started
       enabled: yes
+    loop:
+      - "{{ unit_name }}.timer"
+      - "{{ unit_name }}-semana.timer"

@@ -1,0 +1,14 @@
+[Unit]
+Description=Timer para ianews resumen-semana (encola el resumen semanal en video, los domingos a las 9:30)
+Requires=ianews-resumen-semana.service
+
+[Timer]
+# El video se publica a las 11:30 (publishAt). A las 9:30 el entrenamiento
+# nocturno de la voz ya devolvió Ollama (~06:50) y quedan dos horas para el
+# guion (minutos) y el video en la Pi (~40 min). Pedido del usuario
+# (2026-10-25).
+OnCalendar=Sun *-*-* 09:30:00
+# Sin Persistent: armarlo tarde no sirve (publishAt ya pasó).
+
+[Install]
+WantedBy=timers.target

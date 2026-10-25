@@ -1,0 +1,20 @@
+[Unit]
+Description=ianews resumen-semana: encola el guion del resumen semanal en video (lo ejecuta ianews-processor-worker)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{ compose_dir }}
+# Solo encola `resumen-semana` y termina en segundos. Lo ejecuta
+# ianews-processor-worker (el guion, con Ollama en alphaprime, un lote por
+# sección); al terminar encola `resumen-semana-video`, que toma
+# ianews-resumen-worker en rbpi4003 (~40 min en la Pi) y lo sube programado
+# para las 11:30. Prioridad 10: pasa antes que la cadena si hay una
+# esperando. Ver wiki/Resumen.md § Resumen semanal del repo ianews.
+ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --prioridad 10 --origen ianews-resumen-semana.timer resumen-semana
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
