@@ -35,3 +35,13 @@ ianews_web_ga4_measurement_id: "G-0XN7MTEJW9"
 # protocolo exige publicarla tal cual en /<key>.txt para probar dominio.
 # Generada con `python3 -c "import secrets; print(secrets.token_hex(16))"`.
 ianews_web_indexnow_key: "d0d224b85398fd1fa76410f6f104f2a4"
+
+# Purga de la caché de Cloudflare desde el Builder (ver
+# wiki/Decisiones.md § Caché del HTML en Cloudflare con purga por build del
+# repo ianews). El zone ID no es secreto (dashboard de Cloudflare →
+# ianews.fyi → Overview, columna derecha). El token sí: API token con solo
+# "Zone → Cache Purge → Purge" sobre la zona ianews.fyi, en un archivo
+# local gitignored, mismo criterio que la API key de Pexels. Sin el archivo,
+# queda vacío y el Builder no purga.
+ianews_web_cloudflare_zone_id: "1b755ec190e94653d8fa0282308a49e1"
+ianews_web_cloudflare_purge_token: "{{ lookup('ansible.builtin.file', '/mnt/storage/ansible/ubu2404/ianews/.secrets/cloudflare_purge_token', errors='ignore') | default('', true) }}"
