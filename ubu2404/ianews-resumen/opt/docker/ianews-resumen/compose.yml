@@ -15,3 +15,6 @@ services:
       - /var/docker-data/ianews-resumen/salida:/salida
       # Token OAuth del canal de YouTube (solo lectura).
       - ./secrets:/secrets:ro
+      # Token de TikTok: se reescribe en cada renovación (TikTok puede
+      # devolver otro refresh token), así que va aparte y con escritura.
+      - /var/docker-data/ianews-resumen/tiktok:/tiktok

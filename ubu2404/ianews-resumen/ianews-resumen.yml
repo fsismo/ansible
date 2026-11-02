@@ -16,7 +16,11 @@
 # (utils/local-ca/local-ca.yml --limit rbpi4003.sismonda.local), una imagen
 # del processor que ya tenga `resumen` (migración 014), y el token OAuth del
 # canal en /mnt/storage/Code/ianews/.secrets/youtube-token.json (lo genera
-# autorizar_youtube.py, ver wiki/Resumen.md § YouTube).
+# autorizar_youtube.py, ver wiki/Resumen.md § YouTube). Opcional: el de
+# TikTok en .secrets/tiktok-token.json (autorizar_tiktok.py, § TikTok); sin
+# él, `resumen-tiktok` no sube nada. Y el bot de Telegram que manda el texto
+# del post de TikTok, en .secrets/telegram.json ({"token", "chat_id"}); sin
+# él, no se avisa.
 ---
 - hosts: rbpi4003.sismonda.local
   become: yes
@@ -34,6 +38,12 @@
     # 11:30); esto solo vale para lo que sube sin programar.
     ianews_resumen_youtube_privacidad: private
     youtube_token_src: /mnt/storage/Code/ianews/.secrets/youtube-token.json
+    tiktok_token_src: /mnt/storage/Code/ianews/.secrets/tiktok-token.json
+    # El worker renueva y reescribe el token de TikTok: el playbook solo lo
+    # copia si no está. Para pisarlo con uno recién generado:
+    # -e tiktok_token_forzar=true
+    tiktok_token_forzar: false
+    telegram_src: /mnt/storage/Code/ianews/.secrets/telegram.json
 
   tasks:
   - name: Include Docker Task
@@ -51,6 +61,7 @@
       # El contenedor corre como uid 1000 (usuario `app` del Dockerfile).
       - { path: "{{ resumen_dir }}/secrets", owner: "1000", mode: "0700" }
       - { path: "{{ resumen_data_dir }}/salida", owner: "1000", mode: "0755" }
+      - { path: "{{ resumen_data_dir }}/tiktok", owner: "1000", mode: "0700" }
 
   - name: Copiar el token OAuth de YouTube
     copy:
@@ -59,6 +70,25 @@
       owner: "1000"
       group: "1000"
       mode: 0600
+
+  - name: Copiar el token de TikTok (solo si no está, o con tiktok_token_forzar)
+    copy:
+      src: "{{ tiktok_token_src }}"
+      dest: "{{ resumen_data_dir }}/tiktok/tiktok-token.json"
+      owner: "1000"
+      group: "1000"
+      mode: 0600
+      force: "{{ tiktok_token_forzar | bool }}"
+    when: tiktok_token_src is file
+
+  - name: Copiar la configuración del bot de Telegram
+    copy:
+      src: "{{ telegram_src }}"
+      dest: "{{ resumen_dir }}/secrets/telegram.json"
+      owner: "1000"
+      group: "1000"
+      mode: 0600
+    when: telegram_src is file
 
   - name: Copiar compose.yml
     template:
