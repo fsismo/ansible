@@ -1,11 +1,28 @@
 ---
-# ansible-playbook -i inventory rbpi4001.yml -e "nut_admin_password=secret nut_monuser_password=secret2"
+# NUT en rbpi4001: master del APC Back-UPS RS 900G conectado por USB. Comparten
+# el UPS (como clientes) rbpi4002, rbpi5001 y rbpi5002.
+#
+# Las contraseñas NO están en el repo:
+#   ansible-playbook -i hosts ubu2404/nut-server/rbpi4001.yml \
+#     -e "nut_admin_password=... nut_monslave_password=..."
+# nut_monslave_password tiene que coincidir con la de los clientes
+# (ubu2404/nut-client/rack10inch/upsmon.conf).
+#
+# El nombre del UPS es `apc-900g` a propósito: los clientes lo referencian
+# (apc-900g@10.0.0.41) y renombrarlo los rompería.
 - hosts: rbpi4001.sismonda.local
   become: true
+  vars:
+    nut_ups_name: apc-900g
   handlers:
     - name: restart_service
       service:
         name: nut-server
+        state: restarted
+
+    - name: restart_monitor
+      service:
+        name: nut-monitor
         state: restarted
 
     - name: daemon_reload
@@ -29,7 +46,6 @@
         group: nut
         mode: 0640
         backup: true
-        validate: '/bin/sh -c: %%s'
       notify:
         - restart_service
 
@@ -50,7 +66,8 @@
         dest: /etc/nut/upsd.users
         owner: root
         group: nut
-        mode: 0600
+        # upsd corre como `nut`: con 0600 no podría leerlo.
+        mode: 0640
         backup: true
       notify:
         - restart_service
@@ -64,7 +81,7 @@
         mode: 0640
         backup: true
       notify:
-        - restart_service
+        - restart_monitor
 
     - name: Copiar ups.conf.
       template:
@@ -76,6 +93,14 @@
         backup: true
       notify:
         - restart_service
+
+    - name: Crear /opt/nut.
+      file:
+        path: /opt/nut
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
 
     - name: Copiar check-status.sh.
       copy:
@@ -95,6 +120,9 @@
 
     - name: Verificar ejecución de Nut.
       systemd:
-        name: nut-server
+        name: "{{ item }}"
         state: started
         enabled: true
+      loop:
+        - nut-server
+        - nut-monitor

@@ -1,10 +1,11 @@
 # Network UPS Tools: upsd.users
 [admin]
     password = {{ nut_admin_password }}
-    actions = set
-    actions = fsd
-    instcmds = all 
-
-[monuser]
-    password = {{ nut_monuser_password }}
+    actions = SET FSD
+    instcmds = ALL
     upsmon master
+
+# El usuario que usan los clientes del rack (ubu2404/nut-client/rack10inch).
+[monslave]
+    password = {{ nut_monslave_password }}
+    upsmon slave
