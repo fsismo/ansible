@@ -112,6 +112,9 @@ services:
 
   audiobookshelf:
     image: 'ghcr.io/advplyr/audiobookshelf:2.36.0'
+    # Con perfil, `docker compose up -d` no lo arranca: depende del NFS y lo
+    # levanta ext-www-audiobookshelf.service. `docker compose down` igual lo baja.
+    profiles: ['nfs']
     restart: unless-stopped
     user: "1000:1000"
     volumes:

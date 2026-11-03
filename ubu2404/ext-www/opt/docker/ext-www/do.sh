@@ -38,6 +38,8 @@ for param in "$@"; do
             sleep 2
             echo "Starting containers..."
             docker compose up -d
+            # El down también bajó AudioBookShelf, que up -d no levanta (perfil nfs)
+            systemctl restart --no-block ext-www-audiobookshelf.service
             ;;
         ncld-upgrade)
             # Check for Docker Compose and compose.yml

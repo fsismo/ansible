@@ -127,11 +127,27 @@
       mode: 0644
       backup: yes
 
+  - name: Copiar ext-www-audiobookshelf.service
+    template:
+      src: /mnt/storage/ansible/ubu2404/ext-www/etc/systemd/system/ext-www-audiobookshelf.service
+      dest: /etc/systemd/system/ext-www-audiobookshelf.service
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+
   - name: Configurar ejecución de ext-www.service.
     systemd:
       name: ext-www.service
       state: started
       daemon_reload: yes
       enabled: yes
+
+  # no_block: con el NFS caído el unit queda reintentando y colgaría el playbook.
+  - name: Iniciar ext-www-audiobookshelf.service
+    systemd:
+      name: ext-www-audiobookshelf.service
+      state: started
+      no_block: yes
 
 

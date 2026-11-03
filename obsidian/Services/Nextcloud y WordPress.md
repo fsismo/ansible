@@ -72,7 +72,7 @@ Dependencias:
 | Storage | `/var/docker-data/ext-www/audiobookshelf` |
 | Librería | `/mnt/storage/Downloads/AudioLibros` (NFS) → `/audiobooks` |
 
-Corre como `user: 1000:1000` para que coincida con el dueño de los archivos en `AudioLibros`. Ver [[AudioBookShelf|AudioBookShelf]] para el detalle completo.
+Corre como `user: 1000:1000` para que coincida con el dueño de los archivos en `AudioLibros`. Tiene el perfil `nfs` y lo arranca su propio unit, `ext-www-audiobookshelf.service`. Ver [[AudioBookShelf|AudioBookShelf]] para el detalle completo.
 
 ### Postfix — SMTP Relay
 
@@ -125,6 +125,30 @@ Expone servicios del stack hacia internet vía Cloudflare sin abrir puertos adic
 
 Servicio: `ext-www.service`
 ```
+Wants=network-online.target ext-www-audiobookshelf.service
+After=docker.service network-online.target
+StartLimitIntervalSec=0
 WorkingDirectory=/opt/docker/ext-www/
 ExecStart=/usr/bin/docker compose up -d
+Restart=on-failure
+RestartSec=30
 ```
+
+Reintenta cada 30 s sin límite si falla el arranque. AudioBookShelf **no** se levanta con este `up -d`: tiene el perfil `nfs` en el compose y su propio unit, `ext-www-audiobookshelf.service`. Ver [[AudioBookShelf#Systemd|AudioBookShelf → Systemd]].
+
+## Arranque sin NFS
+
+Los sitios y el túnel de Cloudflare no dependen del NFS: si `/mnt/storage` no está disponible en el boot, solo queda pendiente AudioBookShelf.
+
+Antes un solo `docker compose up -d` levantaba todo. El 2026-11-03, tras un corte de luz, el NFS no estaba listo: AudioBookShelf no pudo montar su librería, compose abortó, cloudflared quedó en `Created` y el sitio devolvía **Error 1033**.
+
+Si vuelve a aparecer el 1033, revisar primero que cloudflared esté corriendo:
+
+```bash
+systemctl status ext-www ext-www-audiobookshelf
+sudo docker compose -f /opt/docker/ext-www/compose.yml ps -a
+```
+
+Las piezas de red y NFS que acompañan este esquema están en [[../Infrastructure/Almacenamiento#Recuperación tras un corte de luz|Almacenamiento → Recuperación tras un corte de luz]].
+
+`./do.sh update` hace `down` y `up -d` del stack, y al final reinicia `ext-www-audiobookshelf.service` para volver a levantar AudioBookShelf. No le hace `pull` a AudioBookShelf: su imagen se actualiza con `update-audiobookshelf.yml`.

@@ -1,0 +1,24 @@
+# AudioBookShelf necesita el NFS: va en su propio unit para que un NFS caído no
+# frene los sitios ni el túnel. Lo arranca ext-www.service (Wants=). No lleva
+# [Install] a propósito: si colgara de multi-user.target, los reintentos dejarían
+# el boot "en curso" mientras el NFS no esté disponible.
+[Unit]
+Description=AudioBookShelf (stack ext-www, requiere NFS)
+Requires=docker.service
+After=docker.service ext-www.service
+PartOf=ext-www.service
+StartLimitIntervalSec=0
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/docker/ext-www/
+# Si el NFS no está montado la ruta no existe: sin este control, Docker podría
+# crearla en el disco local y AudioBookShelf arrancaría con la librería vacía.
+ExecStartPre=/usr/bin/timeout 30 /usr/bin/stat /mnt/storage/Downloads/AudioLibros
+ExecStart=/usr/bin/docker compose up -d audiobookshelf
+# rm y no stop: el `down` de ext-www borra la red pero no un contenedor con perfil
+# ya detenido, que después no arranca (network not found).
+ExecStop=/usr/bin/docker compose rm -s -f audiobookshelf
+TimeoutStartSec=0
+Restart=on-failure
+RestartSec=30

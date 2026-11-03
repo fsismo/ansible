@@ -6,7 +6,7 @@ tags: [servicio, audiolibros, media, docker]
 
 Servidor self-hosted para organizar y reproducir audiolibros (y podcasts), con apps cliente y web player.
 
-Corre como un contenedor más dentro del stack [[Nextcloud y WordPress|ext-www]] (rbpi5002), junto a Nextcloud, WordPress, MariaDB y la NPM interna. No tiene systemd unit ni compose propios.
+Corre dentro del stack [[Nextcloud y WordPress|ext-www]] (rbpi5002), junto a Nextcloud, WordPress, MariaDB y la NPM interna. Comparte el compose, pero tiene systemd unit propio para que su dependencia del NFS no frene al resto del stack.
 
 ## Datos del servicio
 
@@ -40,7 +40,7 @@ El contenedor corre como `user: 1000:1000` para que coincida con el dueño de lo
 ## Dependencias
 
 - Requiere el mount NFS `/mnt/storage` (10.0.0.9:/storage), ya presente en rbpi5002 para Nextcloud/WordPress.
-- Comparte systemd unit y ciclo de vida con el resto de [[Nextcloud y WordPress|ext-www]] (`ext-www.service`).
+- Lo arranca `ext-www.service` ([[Nextcloud y WordPress|ext-www]]) y se baja junto con él. Si AudioBookShelf falla, el resto del stack sigue funcionando.
 
 ## Gestión
 
@@ -52,15 +52,31 @@ docker compose stop audiobookshelf
 docker compose pull audiobookshelf && docker compose up -d audiobookshelf
 ```
 
-`./do.sh update` (en `/opt/docker/ext-www/`) actualiza **todo** el stack (Nextcloud, WordPress, MariaDB incluidos) — para actualizar solo AudioBookShelf usar el playbook de abajo, no `do.sh`.
+Hay que nombrar el servicio: tiene el perfil `nfs`, así que un `docker compose up -d` sin argumentos no lo levanta.
+
+`./do.sh update` (en `/opt/docker/ext-www/`) actualiza **todo** el stack (Nextcloud, WordPress, MariaDB incluidos), salvo la imagen de AudioBookShelf, a la que no le hace `pull`. Sí reinicia su contenedor. Para actualizarlo usar el playbook de abajo.
 
 ## Systemd
 
-Comparte el unit del stack completo:
+Servicio: `ext-www-audiobookshelf.service` (`/etc/systemd/system/`)
 ```
+Requires=docker.service
+After=docker.service ext-www.service
+PartOf=ext-www.service
+StartLimitIntervalSec=0
 WorkingDirectory=/opt/docker/ext-www/
-ExecStart=/usr/bin/docker compose up -d
+ExecStartPre=/usr/bin/timeout 30 /usr/bin/stat /mnt/storage/Downloads/AudioLibros
+ExecStart=/usr/bin/docker compose up -d audiobookshelf
+ExecStop=/usr/bin/docker compose rm -s -f audiobookshelf
+Restart=on-failure
+RestartSec=30
 ```
+
+- **`ExecStop` con `rm`, no `stop`:** el `docker compose down` de `ext-www` borra la red, pero no un contenedor con perfil que ya esté detenido. Ese contenedor viejo después no arranca (`network ... not found`). Los datos no se pierden: están en `/var/docker-data/ext-www/audiobookshelf/` y en el NFS.
+
+- **Reintentos:** mientras el NFS no esté disponible, reintenta cada 30 s sin límite y arranca solo cuando vuelve.
+- **`ExecStartPre`:** evita que Docker cree la ruta en el disco local si el NFS no está montado, lo que dejaría la librería vacía.
+- **Sin `[Install]`, a propósito:** figura como `static` y lo arranca `ext-www.service` con `Wants=`. Si colgara de `multi-user.target`, los reintentos dejarían el boot "en curso" mientras el NFS no esté disponible.
 
 ## Actualizaciones automáticas
 
