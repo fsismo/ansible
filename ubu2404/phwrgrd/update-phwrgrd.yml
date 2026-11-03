@@ -1,10 +1,30 @@
 # Actualiza los contenedores de phwrgrd (pihole + wireguard) y valida que el DNS
 # resuelva correctamente los registros internos y externos esperados.
 # Si la verificación falla, revierte automáticamente al estado anterior.
+#
+# Un host apagado o un pull fallido no frenan a los demás: nada cambió en ese
+# host y el playbook termina con error al final. Cualquier otra falla sí corta,
+# porque el servicio ya se tocó y una imagen mala podría tirar el DNS de todos.
 ---
-- hosts: phwrgrd
+- name: Separar los hosts alcanzables
+  hosts: phwrgrd
+  gather_facts: no
+
+  tasks:
+
+  - name: Probar la conexión
+    ping:
+    ignore_unreachable: yes
+    register: conexion
+
+  - name: Agrupar los alcanzables
+    group_by:
+      key: phwrgrd_alcanzables
+    when: conexion is not unreachable
+
+- name: Actualizar phwrgrd
+  hosts: phwrgrd_alcanzables
   become: yes
-  any_errors_fatal: true
   serial: 1
 
   vars:
@@ -53,13 +73,14 @@
       # resolviendo DNS y el pull no depende de que el propio Pi-Hole
       # (que provee el DNS del host) esté caído.
       # Reintenta ante timeouts puntuales de DNS (ej. contención de red/CPU
-      # en la Raspberry Pi), sin taparlos si el fallo persiste.
+      # en la Raspberry Pi) y ante el toomanyrequests del registro, que con
+      # esperas de segundos sigue fallando. Son hasta 25 minutos por host.
       community.docker.docker_compose_v2_pull:
         project_src: "{{ compose_dir }}"
       register: pull_result
       until: pull_result is succeeded
-      retries: 3
-      delay: 10
+      retries: 5
+      delay: 300
 
     - name: Determinar si hace falta reiniciar el servicio
       set_fact:
@@ -71,11 +92,13 @@
         state: stopped
       when: needs_restart
 
+    # timeout: si compose falla, el unit reintenta sin límite y colgaría el cron.
     - name: Iniciar el servicio
       systemd:
         name: "{{ servicio }}.service"
         state: started
       when: needs_restart
+      timeout: 300
 
     - name: Verificar que todos los contenedores están running
       shell: >-
@@ -141,9 +164,33 @@
       systemd:
         name: "{{ servicio }}.service"
         state: started
+      timeout: 300
 
     - name: "[ROLLBACK] Abortar con error tras revertir"
       fail:
         msg: >
           La verificación falló. Se revirtió al estado anterior.
           Revisá {{ log_file }} antes de volver a ejecutar.
+      when: ansible_failed_task.name != 'Pull de las últimas imágenes'
+
+    - name: Anotar el pull fallido y seguir con el próximo host
+      set_fact:
+        pull_fallido: true
+
+- name: Informar los hosts sin actualizar
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    sin_conexion: "{{ groups['phwrgrd'] | difference(groups['phwrgrd_alcanzables'] | default([])) }}"
+    sin_pull: >-
+      {{ groups['phwrgrd'] | map('extract', hostvars) | selectattr('pull_fallido', 'defined')
+         | map(attribute='inventory_hostname') | list }}
+
+  tasks:
+
+  - name: Terminar con error si algún host quedó sin actualizar
+    fail:
+      msg: "Sin actualizar. Sin conexión: {{ sin_conexion }}. Pull fallido: {{ sin_pull }}."
+    when: sin_conexion or sin_pull
