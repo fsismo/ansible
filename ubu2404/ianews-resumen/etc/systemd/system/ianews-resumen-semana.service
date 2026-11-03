@@ -13,6 +13,11 @@ WorkingDirectory={{ compose_dir }}
 # ianews-resumen-worker en rbpi4003 (~40 min en la Pi) y lo sube programado
 # para las 11:30. Prioridad 10: pasa antes que la cadena si hay una
 # esperando. Ver wiki/Resumen.md § Resumen semanal del repo ianews.
+# Solo los domingos: el 2026-11-03 (martes), al corregirse el reloj después de
+# un corte de luz, el timer se disparó igual y sin Ollama no generó nada; con
+# Ollama arriba habría armado el semanal del 8/11 con dos días de noticias.
+# Para otro día, a mano: `encolar resumen-semana --fecha DOMINGO`. %% = % en systemd.
+ExecCondition=/bin/sh -c 'test "$(date +%%u)" = 7'
 ExecStart=/usr/bin/docker compose -f compose.yml -f compose.override.yml run --rm processor encolar --prioridad 10 --origen ianews-resumen-semana.timer resumen-semana
 TimeoutStartSec=0
 

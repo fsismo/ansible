@@ -186,9 +186,37 @@
       - "{{ unit_name }}-semana.service"
       - "{{ unit_name }}-semana.timer"
 
+  # La Pi no tiene RTC: tras un corte arranca con la hora vieja y, cuando
+  # chrony corrige el reloj, se disparan los timers con OnCalendar aunque no
+  # les toque (pasó el 2026-11-03). Esos timers ya se ordenan después de
+  # time-sync.target, pero nada lo activa si chrony-wait está deshabilitado.
+  # Sin límite de espera: con el límite de 3 min del paquete, si la red tarda
+  # más en volver los timers arrancan igual con el reloj mal.
+  - name: Crear el directorio del drop-in de chrony-wait
+    file:
+      path: /etc/systemd/system/chrony-wait.service.d
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Copiar el drop-in de chrony-wait
+    copy:
+      src: etc/systemd/system/chrony-wait.service.d/sin-limite.conf
+      dest: /etc/systemd/system/chrony-wait.service.d/sin-limite.conf
+      owner: root
+      group: root
+      mode: 0644
+
   - name: Recargar systemd
     systemd:
       daemon_reload: yes
+
+  - name: Habilitar e iniciar chrony-wait
+    systemd:
+      name: chrony-wait.service
+      state: started
+      enabled: yes
 
   # Sin corrida de prueba: encolar ahora subiría un video. La primera es a
   # las 18; para probar a mano: `do.sh` o `systemctl start ianews-resumen`.

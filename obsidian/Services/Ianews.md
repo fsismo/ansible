@@ -1,6 +1,6 @@
 ---
 tags: [servicio, docker, ianews, scraper, processor]
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 # Ianews
@@ -192,6 +192,15 @@ que manda el texto del post de TikTok, de `.secrets/telegram.json`. Los dos
 últimos son opcionales: sin ellos no se sube a TikTok o no se avisa.
 Videos en **privado** (`ianews_resumen_youtube_privacidad`) hasta que Google
 audite el proyecto de la API.
+
+**Cortes de luz (2026-11-03):** rbpi4004 no tiene RTC y arranca con la hora
+vieja; al corregirse el reloj se disparaban todos los timers con `OnCalendar`.
+El play de rbpi4004 habilita `chrony-wait.service` sin límite de espera
+(drop-in `sin-limite.conf`), así esos timers arrancan con la hora ya correcta,
+y `ianews-resumen-semana.service` tiene un `ExecCondition` que solo lo deja
+correr los domingos. Sin NTP, esos timers no arrancan hasta que haya hora. Para
+aplicar solo esto sin reiniciar el worker de rbpi4003: `--limit
+rbpi4004.sismonda.local`.
 
 ---
 
