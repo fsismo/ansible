@@ -1,0 +1,41 @@
+# Hace que network-online.target signifique "la interfaz principal tiene ruta".
+# Solo aplica a hosts con netplan + systemd-networkd (se saltea con NetworkManager).
+#
+# En los hosts con `optional: true` en netplan (imagen cloud-init), netplan agrega
+# una condición que hace saltear wait-online y además la interfaz no cuenta para
+# "online". Por eso el drop-in anula esa condición y nombra la interfaz: habilitar
+# el servicio no alcanza. Se resuelve acá y no en /etc/netplan porque ese archivo
+# lo genera cloud-init.
+  - name: Detectar si la interfaz principal la maneja systemd-networkd
+    stat:
+      path: "/run/systemd/network/10-netplan-{{ ansible_default_ipv4.interface | default('none') }}.network"
+    register: networkd_iface
+
+  - name: Configurar y habilitar systemd-networkd-wait-online
+    when: networkd_iface.stat.exists
+    block:
+      - name: Crear directorio del drop-in de wait-online
+        file:
+          path: /etc/systemd/system/systemd-networkd-wait-online.service.d
+          state: directory
+
+      # El nombre tiene que ordenar después de 10-netplan.conf para pisarlo.
+      # Con timeout: si el DHCP o el switch tardan, el boot sigue igual.
+      - name: Instalar drop-in de wait-online
+        copy:
+          dest: /etc/systemd/system/systemd-networkd-wait-online.service.d/50-interfaz-principal.conf
+          owner: root
+          group: root
+          mode: 0644
+          content: |
+            [Unit]
+            ConditionPathIsSymbolicLink=
+            [Service]
+            ExecStart=
+            ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --interface={{ ansible_default_ipv4.interface }}:routable --timeout=60
+
+      - name: Habilitar systemd-networkd-wait-online
+        systemd:
+          name: systemd-networkd-wait-online.service
+          enabled: yes
+          daemon_reload: yes

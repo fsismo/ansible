@@ -15,3 +15,61 @@
       fstype: nfs
       opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
       state: mounted
+
+  - name: Esperar red real antes de network-online.target
+    ansible.builtin.include_tasks: network-online.yml
+
+  # Si el NFS no responde en el boot, systemd deja el automount en
+  # 'mount-start-limit-hit' y no se recupera solo aunque vuelva el servidor.
+  - name: Instalar script de recuperación del automount NFS
+    copy:
+      dest: /usr/local/sbin/nfs-automount-recover
+      owner: root
+      group: root
+      mode: 0755
+      content: |
+        #!/bin/sh
+        # Rearma mnt-storage.automount si quedó en failed. Si /mnt/storage ya está
+        # montado no hace nada: systemd rechaza un automount sobre un punto en uso.
+        systemctl is-failed --quiet mnt-storage.automount || exit 0
+        mountpoint -q /mnt/storage && exit 0
+        logger -t nfs-automount-recover -p daemon.notice "mnt-storage.automount en failed: rearmando"
+        systemctl reset-failed mnt-storage.automount mnt-storage.mount
+        exec systemctl start mnt-storage.automount
+
+  - name: Instalar nfs-automount-recover.service
+    copy:
+      dest: /etc/systemd/system/nfs-automount-recover.service
+      owner: root
+      group: root
+      mode: 0644
+      content: |
+        [Unit]
+        Description=Rearma el automount de /mnt/storage si quedó en failed
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/sbin/nfs-automount-recover
+        # Corre cada minuto: sin esto llenaría el journal de Starting/Finished.
+        LogLevelMax=notice
+
+  - name: Instalar nfs-automount-recover.timer
+    copy:
+      dest: /etc/systemd/system/nfs-automount-recover.timer
+      owner: root
+      group: root
+      mode: 0644
+      content: |
+        [Unit]
+        Description=Revisa cada minuto el automount de /mnt/storage
+        [Timer]
+        OnCalendar=minutely
+        AccuracySec=10s
+        [Install]
+        WantedBy=timers.target
+
+  - name: Habilitar nfs-automount-recover.timer
+    systemd:
+      name: nfs-automount-recover.timer
+      state: started
+      enabled: yes
+      daemon_reload: yes
