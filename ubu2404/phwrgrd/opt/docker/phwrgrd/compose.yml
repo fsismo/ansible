@@ -10,7 +10,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=America/Argentina/Buenos_Aires
-      - SERVERURL=www.sismonda.com.ar #optional ip or domain of your server
+      - SERVERURL={{ wireguard_serverurl }} #optional ip or domain of your server
       - SERVERPORT=51820 #optional
       - PEERS=10 #optional
       - PEERDNS=auto #optional

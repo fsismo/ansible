@@ -33,9 +33,9 @@
 #        rbpiz-002.sismonda.local	ansible_python_interpreter=/usr/bin/python3
 
 [phwrgrd]
-	rbpi4001.sismonda.local
-	rbpi4002.sismonda.local
-	rbpi5001.sismonda.local
+	rbpi4001.sismonda.local		wireguard_serverurl=rbpi002.freedynamicdns.org
+	rbpi4002.sismonda.local		wireguard_serverurl=alphaprime.freedynamicdns.org
+	rbpi5001.sismonda.local		wireguard_serverurl=rbpi002.freedynamicdns.org
 
 [always]
 #	always.mygadgets.com.ar:1222	ansible_python_interpreter=/usr/bin/python3
