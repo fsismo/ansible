@@ -29,11 +29,12 @@
       mode: 0755
       content: |
         #!/bin/sh
-        # Rearma mnt-storage.automount si quedó en failed. Si /mnt/storage ya está
+        # Rearma mnt-storage.automount si no está activo. Mira is-active y no is-failed
+        # porque un daemon-reload lo pasa de failed a inactive. Si /mnt/storage ya está
         # montado no hace nada: systemd rechaza un automount sobre un punto en uso.
-        systemctl is-failed --quiet mnt-storage.automount || exit 0
+        systemctl is-active --quiet mnt-storage.automount && exit 0
         mountpoint -q /mnt/storage && exit 0
-        logger -t nfs-automount-recover -p daemon.notice "mnt-storage.automount en failed: rearmando"
+        logger -t nfs-automount-recover -p daemon.notice "mnt-storage.automount no activo: rearmando"
         systemctl reset-failed mnt-storage.automount mnt-storage.mount
         exec systemctl start mnt-storage.automount
 
@@ -45,7 +46,7 @@
       mode: 0644
       content: |
         [Unit]
-        Description=Rearma el automount de /mnt/storage si quedó en failed
+        Description=Rearma el automount de /mnt/storage si no está activo
         [Service]
         Type=oneshot
         ExecStart=/usr/local/sbin/nfs-automount-recover
@@ -73,3 +74,5 @@
       state: started
       enabled: yes
       daemon_reload: yes
+    # En --check el timer todavía no existe y cortaría la simulación.
+    ignore_errors: "{{ ansible_check_mode }}"
