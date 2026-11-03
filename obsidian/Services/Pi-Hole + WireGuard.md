@@ -86,7 +86,22 @@ Mientras el NAS no esté, `phwrgrd-sync.service` figura en `failed` y el host co
 
 Antes el sync era obligatorio: tras un apagado limpio, el DNS no levantaba hasta que apareciera el NAS.
 
-**Dónde está aplicado:** solo en rbpi5001 (2026-11-03). rbpi4001 y rbpi4002 lo reciben al correr `phwrgrd.yml`, que ahora incluye `modules/nfs.yml`. Ver [[../Infrastructure/Almacenamiento#Recuperación tras un corte de luz|Almacenamiento → Recuperación tras un corte de luz]].
+**Dónde está aplicado:** rbpi5001, rbpi4001 y rbpi4002 (2026-11-03). Solo se probó con reinicio en rbpi5001.
+
+Ver [[../Infrastructure/Almacenamiento#Recuperación tras un corte de luz|Almacenamiento → Recuperación tras un corte de luz]].
+
+## Endpoint de WireGuard por host
+
+`SERVERURL` se define por host con la variable `wireguard_serverurl`, en el grupo `[phwrgrd]` del inventario (`hosts`):
+
+| Host | `wireguard_serverurl` |
+|---|---|
+| rbpi4001, rbpi5001 | `rbpi002.freedynamicdns.org` |
+| rbpi4002 | `alphaprime.freedynamicdns.org` |
+
+No usar `www.sismonda.com.ar`: pasa por el proxy de Cloudflare, que no deja pasar el UDP de WireGuard.
+
+Al cambiar `SERVERURL` y recrear el contenedor, la imagen regenera los `peer*.conf` del servidor con el endpoint nuevo y conserva las claves. Los clientes ya configurados guardan el endpoint viejo: hay que reimportarles el `peer*.conf` o cambiarles la línea `Endpoint`.
 
 ## DNS local
 

@@ -42,7 +42,7 @@ Estas piezas no reemplazan los reintentos: un NAS lento puede responder después
 
 Los servicios no tienen que montar el NFS a mano: un `mount` manual puede trabarse minutos y deja el automount en `failed`. Hay que acceder a la ruta y dejar que actúe el automount.
 
-**Dónde está aplicado:** rbpi5002 y rbpi5001 (2026-11-03). El resto de los hosts lo recibe al correr un playbook que incluya `modules/nfs.yml`: `basic.yml`, `ext-www.yml`, `phwrgrd.yml` o `torrents.yml`.
+**Dónde está aplicado:** rbpi5002, rbpi5001, rbpi4001 y rbpi4002 (2026-11-03). El resto de los hosts lo recibe al correr un playbook que incluya `modules/nfs.yml`: `basic.yml`, `ext-www.yml`, `phwrgrd.yml` o `torrents.yml`.
 
 ## Estructura de directorios en NFS
 
