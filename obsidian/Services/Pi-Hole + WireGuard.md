@@ -115,12 +115,22 @@ Ver [[../Infrastructure/Red|Arquitectura de Red]] para detalles de DNS.
 
 ### Playbook de update (`update-phwrgrd.yml`)
 
-1. Pull de imágenes nuevas
-2. Recrear contenedores
-3. **Validar DNS**:
-   - `printer.sismonda.local` → `10.0.0.80`
-   - `www.sismonda.com.ar` → `10.0.0.52`
-4. Si falla la validación → **rollback automático** con restore de backup
+1. Pull de imágenes nuevas, con hasta 5 reintentos cada 5 minutos
+2. Recrear contenedores, solo si cambió el compose o alguna imagen
+3. **Validar DNS**: `printer.sismonda.local` → `10.0.0.80`
+4. Si falla algo → **rollback automático** con restore de backup
+
+Los hosts se actualizan de a uno. Qué pasa si falla algo:
+
+| Falla | Qué hace |
+|---|---|
+| Host sin conexión | Sigue con los demás; el playbook termina con error |
+| Pull | Revierte ese host, sigue con los demás; el playbook termina con error |
+| Cualquier otra, después de tocar el servicio | Revierte ese host y **corta**: una imagen mala podría tirar el DNS de todos |
+
+`serial: 1` no alcanza para seguir después de una falla: Ansible corta el play cuando falla un lote entero, y acá cada host es un lote. Por eso el `rescue` no vuelve a fallar cuando el problema fue el pull.
+
+El pull falla con `toomanyrequests: retry-after: ...µs, allowed: 44000/minute`. Se vio en `lscr.io/linuxserver/wireguard` y no parece el límite de Docker Hub por IP; con esperas de 10 segundos seguía fallando.
 
 ### Cron semanal
 
