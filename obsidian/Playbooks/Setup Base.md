@@ -59,7 +59,9 @@ mount:
   opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
 ```
 
-Ver [[../Infrastructure/Almacenamiento|Almacenamiento NFS]].
+También instala `nfs-automount-recover.timer` e incluye `modules/network-online.yml` (`wait-online` para la interfaz principal). Con esto, correr `basic.yml` en un host le cambia cómo arranca: `network-online.target` puede demorar hasta 60 s.
+
+Ver [[../Infrastructure/Almacenamiento#Recuperación tras un corte de luz|Almacenamiento → Recuperación tras un corte de luz]].
 
 ---
 

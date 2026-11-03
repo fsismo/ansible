@@ -25,7 +25,22 @@ rsize=131072, wsize=131072
 
 ## Playbook
 
-`ubu2404/modules/nfs.yml` — instala `nfs-common` y crea el mount en `/etc/fstab`.
+`ubu2404/modules/nfs.yml` — instala `nfs-common`, crea el mount en `/etc/fstab` e instala las protecciones de la sección siguiente. Lo incluyen `ubu2404/basic/basic.yml` y `ubu2404/ext-www/ext-www.yml`.
+
+## Recuperación tras un corte de luz
+
+Después de un corte, el host puede arrancar antes que la red o que el NAS. Si eso pasa, el automount falla varias veces seguidas, queda en `mount-start-limit-hit` y systemd no lo reintenta aunque el NFS vuelva. Dos piezas lo cubren:
+
+| Pieza | Qué hace |
+|---|---|
+| `nfs-automount-recover.timer` + `/usr/local/sbin/nfs-automount-recover` | Cada minuto, si `mnt-storage.automount` está en `failed` y `/mnt/storage` no está montado, hace `reset-failed` y lo vuelve a arrancar |
+| `ubu2404/modules/network-online.yml` | Habilita `systemd-networkd-wait-online` para la interfaz principal, con timeout de 60 s, para que `network-online.target` signifique que hay ruta |
+
+Habilitar `wait-online` no alcanza en los hosts con `optional: true` en netplan: netplan agrega una condición que lo saltea y esa interfaz no cuenta para "online". Por eso hay un drop-in, `50-interfaz-principal.conf`, que anula esa condición y nombra la interfaz. Con NetworkManager el módulo no hace nada.
+
+Estas piezas no reemplazan los reintentos: un NAS lento puede responder después de que la red ya esté lista. Los servicios que usan el NFS tienen que tolerar que no esté al arrancar. Ver [[../Services/Nextcloud y WordPress#Arranque sin NFS|ext-www → Arranque sin NFS]].
+
+**Dónde está aplicado:** solo en rbpi5002 (2026-11-03). El resto de los hosts lo recibe al correr `basic.yml`.
 
 ## Estructura de directorios en NFS
 
