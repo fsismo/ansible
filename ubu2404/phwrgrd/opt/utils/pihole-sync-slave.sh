@@ -1,14 +1,10 @@
 #!/bin/bash
 
-NFS_MOUNT_POINT="/mnt/storage"
-
-if ! mountpoint -q "$NFS_MOUNT_POINT"; then
-    echo "NFS is not mounted. Attempting to mount..."
-    mount "$NFS_MOUNT_POINT"
-    if ! mountpoint -q "$NFS_MOUNT_POINT"; then
-        echo "Failed to mount NFS. Exiting."
-        exit 1
-    fi
+# Se accede por el automount en vez de montar a mano: un mount manual puede
+# trabarse minutos y deja el automount en failed hasta el próximo reinicio.
+if ! timeout 20 stat /mnt/storage/pihole > /dev/null; then
+    echo "NFS no disponible, se omite el sync."
+    exit 1
 fi
 
 CHANGES=$(rsync -az -i --files-from=/opt/utils/pihole-sync-slave.conf /mnt/storage/pihole /var/docker-data/phwrgrd/pihole/etc/pihole | grep '^[<>]f')

@@ -39,13 +39,8 @@
       - /var/docker-data/phwrgrd/pihole/etc/pihole
       - /var/docker-data/phwrgrd/pihole/etc/dnsmasq.d
 
-  - name: Mount up device by label
-    mount:
-      path: /mnt/storage
-      src: 10.0.0.9:/storage
-      fstype: nfs
-      opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
-      state: mounted
+  - name: Include NFS Task
+    ansible.builtin.include_tasks: "../modules/nfs.yml"
 
   - name: Eliminar docker-compose.yml legacy
     file:

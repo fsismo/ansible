@@ -56,7 +56,9 @@ Las definiciones de LAN se sincronizan desde NFS para resolución interna:
 /mnt/storage/pihole/ → /opt/docker/phwrgrd/pihole/
 ```
 
-Servicio systemd: `phwrgrd-sync.service` + `phwrgrd-sync.timer`
+Servicio systemd: `phwrgrd-sync.service` + `phwrgrd-sync.timer` (cada 5 minutos)
+
+El sync accede al NFS por el automount y no monta a mano: un `mount` manual puede trabarse minutos y deja `mnt-storage.automount` en `failed` hasta el próximo reinicio.
 
 ## Systemd services
 
@@ -65,6 +67,26 @@ Servicio systemd: `phwrgrd-sync.service` + `phwrgrd-sync.timer`
 | `phwrgrd.service` | Stack Docker Compose |
 | `phwrgrd-sync.service` | Sincronización config Pi-Hole |
 | `phwrgrd-sync.timer` | Timer para sync periódico |
+
+`phwrgrd.service`:
+```
+Wants=network-online.target
+After=docker.service network-online.target
+StartLimitIntervalSec=0
+ExecStartPre=-/usr/bin/timeout 60 /opt/utils/pihole-sync-slave.sh
+Restart=on-failure
+RestartSec=30
+```
+
+## Arranque sin NFS
+
+El NAS tarda más que las Raspberry en levantar. En ese intervalo responde `access denied by server`, porque todavía no tiene los exports listos. El DNS no puede esperarlo, así que el sync al arrancar es opcional (prefijo `-` en `ExecStartPre`): Pi-hole levanta con la config local y `phwrgrd-sync.timer` sincroniza cuando el NFS vuelve.
+
+Mientras el NAS no esté, `phwrgrd-sync.service` figura en `failed` y el host como `degraded`. Es esperable y se corrige solo en la siguiente corrida exitosa.
+
+Antes el sync era obligatorio: tras un apagado limpio, el DNS no levantaba hasta que apareciera el NAS.
+
+**Dónde está aplicado:** solo en rbpi5001 (2026-11-03). rbpi4001 y rbpi4002 lo reciben al correr `phwrgrd.yml`, que ahora incluye `modules/nfs.yml`. Ver [[../Infrastructure/Almacenamiento#Recuperación tras un corte de luz|Almacenamiento → Recuperación tras un corte de luz]].
 
 ## DNS local
 
