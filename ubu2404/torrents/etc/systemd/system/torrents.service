@@ -1,14 +1,21 @@
 [Unit]
-Description= - Containers prowlarr, radarr, sonarr, transmission - 
-Requires=docker.service 
-After=network.target
+Description= - Containers prowlarr, radarr, sonarr, transmission -
+Requires=docker.service
+Wants=network-online.target
+After=docker.service network-online.target
+StartLimitIntervalSec=0
 [Service]
-ExecStartPre=/bin/sleep 30
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/docker/torrents/
+# do.sh start falla si no está el NFS. El NAS tarda más que las Raspberry en
+# levantar, así que se reintenta hasta que aparezca.
 ExecStart=/opt/docker/torrents/do.sh start
 ExecStop=/opt/docker/torrents/do.sh stop
 TimeoutStartSec=0
+Restart=on-failure
+RestartSec=30
+# Cuelga de docker y no de multi-user.target: si no, los reintentos dejarían el
+# boot "en curso" mientras el NFS no esté disponible.
 [Install]
-WantedBy=multi-user.target
+WantedBy=docker.service

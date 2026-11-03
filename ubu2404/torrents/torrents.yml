@@ -23,13 +23,8 @@
       path: /opt/docker/torrents
       state: directory
 
-  - name: Mount up device by label
-    mount:
-      path: /mnt/storage
-      src: 10.0.0.9:/storage
-      fstype: nfs
-      opts: rw,soft,x-systemd.automount,rsize=131072,wsize=131072
-      state: mounted
+  - name: Include NFS Task
+    ansible.builtin.include_tasks: "../modules/nfs.yml"
 
   - name: Copiar compose.yml
     template:
@@ -58,9 +53,20 @@
       mode: 0644
       backup: yes
 
-  - name: Configurar ejecución de torrents.service.
+  - name: Recargar systemd
+    systemd:
+      daemon_reload: yes
+
+  # reenable: el [Install] pasó de multi-user.target a docker.service, y un enable
+  # solo dejaría también el enlace viejo.
+  - name: Actualizar enlaces de torrents.service
+    command: systemctl reenable torrents.service
+    changed_when: false
+    when: not ansible_check_mode
+
+  # no_block: con el NFS caído el unit queda reintentando y colgaría el playbook.
+  - name: Iniciar torrents.service
     systemd:
       name: torrents.service
       state: started
-      daemon_reload: yes
-      enabled: yes
+      no_block: yes

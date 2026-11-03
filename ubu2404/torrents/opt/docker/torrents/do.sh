@@ -1,18 +1,20 @@
 #!/bin/bash
-NFS_MOUNT_POINT="/mnt/storage"  # Replace with your actual NFS mount point
 
-if ! mountpoint -q $NFS_MOUNT_POINT; then
-    echo "NFS is not mounted. Attempting to mount..."
-    sudo mount $NFS_MOUNT_POINT
-    if ! mountpoint -q $NFS_MOUNT_POINT; then
-        echo "Failed to mount NFS. Exiting."
+# Se accede por el automount en vez de montar a mano: un mount manual puede
+# trabarse minutos y deja el automount en failed hasta el próximo reinicio.
+# Sin este control, Docker podría crear las rutas en el disco local y los
+# contenedores arrancarían con las carpetas vacías.
+require_nfs() {
+    if ! timeout 30 stat /mnt/storage/Downloads/transmission > /dev/null; then
+        echo "NFS no disponible. Exiting."
         exit 1
     fi
-fi
+}
 
 # Function to start the application
 start_app() {
-        docker compose up -d
+    require_nfs
+    docker compose up -d
 }
 
 # Function to stop the application
@@ -28,6 +30,7 @@ restart_app() {
 }
 
 upgrade_app() {
+    require_nfs
     echo "Upgrading the dockers..."
     docker compose pull
     docker compose up -d --force-recreate

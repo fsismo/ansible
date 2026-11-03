@@ -103,6 +103,26 @@ Ver [[../Infrastructure/Almacenamiento|Almacenamiento NFS]] para rutas NFS.
 
 Servicio: `torrents.service`
 ```
+Requires=docker.service
+Wants=network-online.target
+After=docker.service network-online.target
+StartLimitIntervalSec=0
 WorkingDirectory=/opt/docker/torrents/
-ExecStart=/usr/bin/docker compose up -d
+ExecStart=/opt/docker/torrents/do.sh start
+ExecStop=/opt/docker/torrents/do.sh stop
+Restart=on-failure
+RestartSec=30
+[Install]
+WantedBy=docker.service
 ```
+
+## Arranque sin NFS
+
+Todos los servicios menos Prowlarr y FlareSolverr usan el NFS. El NAS tarda más que las Raspberry en levantar, así que el stack espera:
+
+- **`do.sh start`, `restart` y `upgrade`** verifican `/mnt/storage/Downloads/transmission` y fallan si no está. Así Docker no crea las rutas en el disco local, lo que dejaría las carpetas vacías. `do.sh stop` no necesita el NFS.
+- **`torrents.service`** reintenta cada 30 s, sin límite, hasta que el NFS aparece. Por eso ya no hace falta el `sleep 30` que tenía antes.
+- **`WantedBy=docker.service`:** si colgara de `multi-user.target`, los reintentos dejarían el boot "en curso" mientras el NFS no esté disponible.
+- **`update-torrents.yml`** espera hasta 300 s al iniciar el servicio. Si el NFS está caído durante el cron, hace rollback en vez de colgarse.
+
+Ver [[../Infrastructure/Almacenamiento#Recuperación tras un corte de luz|Almacenamiento → Recuperación tras un corte de luz]].

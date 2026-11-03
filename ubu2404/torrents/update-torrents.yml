@@ -55,10 +55,12 @@
       community.docker.docker_compose_v2_pull:
         project_src: "{{ compose_dir }}"
 
+    # timeout: con el NFS caído el unit reintenta sin límite y colgaría el cron.
     - name: Iniciar el servicio
       systemd:
         name: "{{ servicio }}.service"
         state: started
+      timeout: 300
 
     - name: Verificar que todos los contenedores están running
       shell: >-
@@ -98,6 +100,7 @@
       systemd:
         name: "{{ servicio }}.service"
         state: started
+      timeout: 300
 
     - name: "[ROLLBACK] Abortar con error tras revertir"
       fail:
