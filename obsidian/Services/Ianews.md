@@ -202,6 +202,14 @@ correr los domingos. Sin NTP, esos timers no arrancan hasta que haya hora. Para
 aplicar solo esto sin reiniciar el worker de rbpi4003: `--limit
 rbpi4004.sismonda.local`.
 
+**Horario de la cadena (2026-11-04):** `ianews-cluster-redactar.timer` corre a
+hora fija en horas pares (`OnCalendar=00/2:36`), sin `Persistent=`. La cadena
+tarda hasta unos 45 min y no puede estar corriendo a las 18:00: el resumen
+espera a que termine y, si el video queda listo después de las 18:10, sube en
+privado sin programar. Antes era un intervalo de 2h contado desde el arranque, y
+el corte del 2026-11-03 la pasó a horas impares. Para aplicar solo el timer, no
+correr `ianews-cluster-redactar.yml`, que además encola una corrida de la cadena.
+
 ---
 
 ## Pieza: Informe de URLs
