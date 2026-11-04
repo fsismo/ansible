@@ -22,7 +22,7 @@ Stack de servicios web externos: cloud personal, blog y base de datos compartida
 
 | Parámetro | Valor |
 |---|---|
-| Imagen | `fsismo/mariadb-11-noble-auto-backups` |
+| Imagen | `fsismo/mariadb-12.3-noble-auto-backups:12.3.20261104-1132` (MariaDB 12.3.3, tag fijo) |
 | Puerto | `3306` |
 | IP interna | `172.31.0.10` |
 | Backups | automáticos (retención 30 días) |
@@ -163,3 +163,19 @@ sudo docker compose up -d --no-deps nextcloud wordpress
 ```
 
 Para volver atrás, restaurar la imagen anterior en `compose.yml` y repetir los mismos pasos.
+
+## Upgrade de MariaDB 11.8 a 12.3 (2026-11-04)
+
+La base `npm` también vive en este servidor: al frenar MariaDB hay que frenar Nginx Proxy Manager, y eso corta todos los sitios del túnel. El corte fue de unos 6 minutos, uno de ellos porque los contenedores Apache no terminan con `SIGTERM` y esperan el `docker stop -t 60`.
+
+Los dumps se llaman `<base>-AAAAMMDD.sql`, así que un backup manual pisa el del mismo día. Antes de correrlo, copiarlos fuera de `dbbackups`.
+
+Resguardos del upgrade:
+
+- `/var/docker-data/ext-www/mysql/data-pre12.3-20261104`: datadir 11.8 con la base detenida.
+- `/var/docker-data/ext-www/mysql/upgrade-12.3-20261104`: dumps de las 03:30 y previos al upgrade, y checksums antes y después.
+- `/mnt/storage/backups/rbpi5002-mariadb-upgrade-20261104`: copia externa, fuera del espejo con `--delete` de `rbpi-backup.sh`.
+
+**Rollback:** MariaDB no admite downgrade sobre el mismo datadir. Frenar las aplicaciones, Nginx Proxy Manager y la base; mover aparte el datadir actual; restaurar la copia con `cp -a`; volver a la imagen `fsismo/mariadb-11-noble-auto-backups@sha256:97a7423cc93a9ec2d39ca20875b09ca899ec812ef8e1465020ef9d9d33aca17e` (en el host, también con el tag `rollback-20261104`), revertir `compose.yml` y comparar los checksums. Lo escrito después del upgrade se pierde.
+
+Desde esta imagen los dumps quedan `root:root` modo `600`, también en el espejo del NAS. `rbpi-backup.sh` corre como root y los sigue leyendo.

@@ -8,7 +8,7 @@ services:
 
   db:
     #image: 'jc21/mariadb-aria:latest'
-    image: 'fsismo/mariadb-11-noble-auto-backups:latest'
+    image: 'fsismo/mariadb-12.3-noble-auto-backups:12.3.20261104-1132'
     restart: unless-stopped
     ports:
       - '3306:3306'
