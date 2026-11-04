@@ -45,7 +45,7 @@ MARIADB_BACKUP_RETENTION: 30
 
 | Parámetro | Valor |
 |---|---|
-| Imagen | `fsismo/ubuntu-24.04-apache-php` |
+| Imagen | `fsismo/ubuntu-26.04-apache-php` (PHP 8.5) |
 | IP interna | `172.31.0.20` |
 | Storage | `/var/docker-data/ext-www/nextcloud` |
 
@@ -56,7 +56,7 @@ Dependencias:
 
 | Parámetro | Valor |
 |---|---|
-| Imagen | `fsismo/ubuntu-24.04-apache-php` |
+| Imagen | `fsismo/ubuntu-26.04-apache-php` (PHP 8.5) |
 | IP interna | `172.31.0.22` |
 | Storage | `/var/docker-data/ext-www/wordpress` |
 
@@ -152,3 +152,14 @@ sudo docker compose -f /opt/docker/ext-www/compose.yml ps -a
 Las piezas de red y NFS que acompañan este esquema están en [[../Infrastructure/Almacenamiento#Recuperación tras un corte de luz|Almacenamiento → Recuperación tras un corte de luz]].
 
 `./do.sh update` hace `down` y `up -d` del stack, y al final reinicia `ext-www-audiobookshelf.service` para volver a levantar AudioBookShelf. No le hace `pull` a AudioBookShelf: su imagen se actualiza con `update-audiobookshelf.yml`.
+
+## Cambiar la imagen de Nextcloud o WordPress
+
+PHP 8.5 exige Nextcloud 33+ y WordPress 6.9+. Para cambiar la imagen sin bajar la base, el proxy ni el túnel, aplicar el playbook y recrear solo esos dos contenedores:
+
+```bash
+cd /opt/docker/ext-www
+sudo docker compose up -d --no-deps nextcloud wordpress
+```
+
+Para volver atrás, restaurar la imagen anterior en `compose.yml` y repetir los mismos pasos.

@@ -52,7 +52,7 @@ services:
       - db
 
   nextcloud:
-    image: 'fsismo/ubuntu-24.04-apache-php:latest'
+    image: 'fsismo/ubuntu-26.04-apache-php:latest'
     restart: unless-stopped
     volumes:
       - /var/docker-data/ext-www/nextcloud:/var/www/html
@@ -83,7 +83,7 @@ services:
         ipv4_address: 172.31.0.21
 
   wordpress:
-    image: 'fsismo/ubuntu-24.04-apache-php:latest'
+    image: 'fsismo/ubuntu-26.04-apache-php:latest'
     restart: unless-stopped
     volumes:
       - /var/docker-data/ext-www/wordpress:/var/www/html
