@@ -9,9 +9,14 @@ Description=Timer para ianews cluster+redactar+sesgo+imagen+build (encola cada 2
 # anterior todavía no arrancó su `cluster`, no se duplica (un solo pendiente
 # por acción). Ver wiki/Decisiones.md § La cadena corre cada 2 horas y
 # § Cola de trabajos del repo ianews.
-OnBootSec=20min
-OnUnitActiveSec=2h
-Persistent=true
+#
+# Hora fija, en horas pares: la cadena tarda hasta ~45 min y no tiene que estar
+# corriendo a las 18:00, cuando ianews-resumen.timer encola el Short (si espera,
+# el video queda listo después de las 18:10 y sube sin programar). Con un
+# intervalo contado desde el boot, el corte del 2026-11-03 la pasó a horas
+# impares. Sin Persistent= por lo mismo: tras un corte espera a la próxima hora
+# par en vez de dispararse al arrancar.
+OnCalendar=00/2:36
 
 [Install]
 WantedBy=timers.target
