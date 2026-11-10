@@ -6,6 +6,7 @@ Description=ianews-web: recargar nginx al cambiar el map de redirecciones
 
 [Path]
 PathChanged=/var/docker-data/ianews-web/html/.redirecciones.map
+PathChanged=/var/docker-data/ianews-web/html/.retiradas.map
 
 [Install]
 WantedBy=multi-user.target
