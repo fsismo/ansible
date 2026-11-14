@@ -1,5 +1,14 @@
 User-agent: *
 Allow: /
 
+# Googlebot-Image: solo la variante de 1200 px en JPG, la de og:image y el
+# JSON-LD (Discover, Google Imágenes). Las otras 7 variantes de cada imagen
+# (240/480/800 px, AVIF) son para los navegadores y se llevaban ~31% del
+# rastreo del sitio (estadísticas de rastreo, 2026-11-14). Googlebot sigue
+# cargándolas todas al renderizar: esta regla no lo afecta.
+User-agent: Googlebot-Image
+Disallow: /imagenes/
+Allow: /imagenes/*-1200.jpg$
+
 Sitemap: https://ianews.fyi/sitemap.xml
 Sitemap: https://ianews.fyi/news-sitemap.xml
