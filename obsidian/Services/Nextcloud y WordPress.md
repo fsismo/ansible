@@ -23,7 +23,7 @@ Stack de servicios web externos: cloud personal, blog y base de datos compartida
 | Parámetro | Valor |
 |---|---|
 | Imagen | `fsismo/mariadb-12.3-noble-auto-backups:12.3.20261104-1132` (MariaDB 12.3.3, tag fijo) |
-| Puerto | `3306` |
+| Puerto | `3306` solo en la red interna (no se publica en el host; acceso con `sudo docker exec -it ext-www-db-1 mariadb`) |
 | IP interna | `172.31.0.10` |
 | Backups | automáticos (retención 30 días) |
 

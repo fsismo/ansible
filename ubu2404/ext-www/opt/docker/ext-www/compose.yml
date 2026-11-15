@@ -10,8 +10,10 @@ services:
     #image: 'jc21/mariadb-aria:latest'
     image: 'fsismo/mariadb-12.3-noble-auto-backups:12.3.20261104-1132'
     restart: unless-stopped
-    ports:
-      - '3306:3306'
+    # Sin puerto publicado: WordPress, Nextcloud y NPM usan la red interna
+    # (db / 172.31.0.10). Para acceder desde el host: docker exec ext-www-db-1 mariadb.
+    #ports:
+      #- '3306:3306'
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       BACKUP_RETENTION: ${MARIADB_BACKUP_RETENTION}
