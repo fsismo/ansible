@@ -191,21 +191,42 @@ Deploy reducido: únicamente el contenedor `ollama`, sin Open-WebUI/ComfyUI/Tika
 
 Puertos: solo `11434` (API Ollama). Sin `3000`/`8188`/`9998`.
 
-GPU: blackmamba tiene una única GPU, la Strix (Radeon 880M/890M) integrada — la misma familia que usa el contenedor `comfyui` en alphaprime (`gfx1150`, no la discreta RX 9060 XT del `ollama` de alphaprime). Por eso el override es distinto al del `ollama.yml` de alphaprime:
+GPU: blackmamba tiene una única GPU, la Strix (Radeon 880M/890M) integrada — la misma familia que usa el contenedor `comfyui` en alphaprime (`gfx1150`, no la discreta RX 9060 XT del `ollama` de alphaprime). El override de arquitectura que se usaba ya no hace falta (ver nota abajo):
 
 ```
-HSA_OVERRIDE_GFX_VERSION=11.0.0   # gfx1150 (Strix 880M/890M) — igual override que comfyui en alphaprime
 ROCR_VISIBLE_DEVICES=0            # única GPU del host
 OLLAMA_IGPU_ENABLE=1              # Ollama descarta las iGPU por defecto; sin esto cae a CPU (ver nota)
 OLLAMA_FLASH_ATTENTION=true
 OLLAMA_KV_CACHE_TYPE=q8_0
 OLLAMA_DEBUG=0
-OLLAMA_CONTEXT_LENGTH=32768
+OLLAMA_CONTEXT_LENGTH=65536       # 64k para agentes (OpenCode)
+OLLAMA_KEEP_ALIVE=30m             # no descargar el modelo entre turnos del agente
+OLLAMA_NUM_PARALLEL=2             # 2 slots de KV para subagentes (el KV se duplica)
+OLLAMA_MAX_LOADED_MODELS=1        # un solo modelo en VRAM
 ```
+
+> **Sin `HSA_OVERRIDE_GFX_VERSION` (desde 2026-11-08).** La imagen `ollama/ollama:rocm` (Ollama 0.40.13, `rocm_v7_2`) compila `libggml-hip.so` y rocBLAS con kernels nativos `gfx1150`/`gfx1151`. El override `11.0.0` que se usaba antes forzaba kernels gfx1100 (RDNA3 discreta). Sin override, Ollama detecta `library=ROCm compute=gfx1150 "AMD Radeon 890M Graphics" type=iGPU total="32.0 GiB"` y la inferencia corre `100% GPU`. Si una imagen futura deja de traer gfx1150, volver a `HSA_OVERRIDE_GFX_VERSION=11.0.0`.
+
+### Dimensionamiento para agentes (64k de contexto)
+
+VRAM: 32 GiB de carve-out UMA (BIOS) + ~15,2 GiB de GTT. KV cache q8_0 a 64k medido/calculado: flint ~0,9 GiB (14 de 49 capas con atención completa, el resto sliding window de 513), Qwen3-Coder-30B-A3B ~3,2 GiB. Con modelos MoE de ~22 GB el total queda en ~25 GiB de 32.
+
+Benchmark 2026-11-08 (64k ctx, KV q8_0, todos `100% GPU`):
+
+| Modelo | VRAM | Gen tok/s | Prompt ~12k tok/s |
+|---|---|---|---|
+| `flint:40b` (MoE 2,5B activos) | 21,0 GiB | 31,6 | 406 |
+| `hf.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:UD-Q4_K_XL` | 19,7 GiB | 30,0 | 455 |
+| `ornith-1.5:35b` (35B-A3B) | 20,6 GiB | 26,2 | 501 |
+| `nemotron-3.5-lightning:30b` | 23,8 GiB | 24,6 | 394 |
+| gemma-4-26B-A4B IQ4_XS | 14,1 GiB | 23,0 | 433 |
+| `qwen3.8:27b` (denso) | 16,6 GiB | 6,9 | 110 |
+
+Los modelos densos son ~4–5x más lentos en esta iGPU (limitada por ancho de banda de memoria): para agentes usar MoE.
 
 Variables de entorno: mismas optimizaciones que alphaprime, sin `OLLAMA_ORIGINS` porque no hay WebUI/extensión detrás.
 
-> **`OLLAMA_IGPU_ENABLE=1` es obligatorio acá.** Ollama (≥0.34) descarta automáticamente las GPU integradas ("dropping integrated GPU; to enable, set OLLAMA_IGPU_ENABLE=1") y cae a CPU — se detectó en el primer deploy de prueba (`default_num_ctx=4096`, `total_vram=0B`, inference compute `id=cpu`). Con la variable seteada, Ollama reconoce la Radeon 890M como `type=iGPU total="32.0 GiB"` (VRAM unificada) y sube el contexto default a 32768. No aplica en alphaprime porque ahí Ollama usa la GPU discreta (no es una iGPU).
+> **`OLLAMA_IGPU_ENABLE=1` es obligatorio acá.** Ollama (≥0.34) descarta automáticamente las GPU integradas ("dropping integrated GPU; to enable, set OLLAMA_IGPU_ENABLE=1") y cae a CPU — se detectó en el primer deploy de prueba (`default_num_ctx=4096`, `total_vram=0B`, inference compute `id=cpu`). Con la variable seteada, Ollama reconoce la Radeon 890M como `type=iGPU total="32.0 GiB"` (VRAM unificada) y sube el contexto default a 32768 (sobrescrito a 65536 por `OLLAMA_CONTEXT_LENGTH`). No aplica en alphaprime porque ahí Ollama usa la GPU discreta (no es una iGPU).
 
 Estado de blackmamba (Ubuntu 26.04.1 LTS): Docker 29.1.3, `/mnt/storage` (NFS) montado. Onboarding Ansible completado el 2026-09-16 — usuario `ansible` (uid/gid 1001, igual que alphaprime) creado, sudoers `NOPASSWD: ALL`, clave pública de `ansible@alphaprime` autorizada, más `systemd-resolved.yml` y `local-ca.yml` aplicados (`--limit blackmamba.sismonda.local`).
 
