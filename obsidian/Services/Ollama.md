@@ -205,13 +205,35 @@ OLLAMA_NUM_PARALLEL=2             # 2 slots de KV para subagentes (el KV se dupl
 OLLAMA_MAX_LOADED_MODELS=1        # un solo modelo en VRAM
 ```
 
-> **Sin `HSA_OVERRIDE_GFX_VERSION` (desde 2026-11-08).** La imagen `ollama/ollama:rocm` (Ollama 0.40.13, `rocm_v7_2`) compila `libggml-hip.so` y rocBLAS con kernels nativos `gfx1150`/`gfx1151`. El override `11.0.0` que se usaba antes forzaba kernels gfx1100 (RDNA3 discreta). Sin override, Ollama detecta `library=ROCm compute=gfx1150 "AMD Radeon 890M Graphics" type=iGPU total="32.0 GiB"` y la inferencia corre `100% GPU`. Si una imagen futura deja de traer gfx1150, volver a `HSA_OVERRIDE_GFX_VERSION=11.0.0`.
+> **Sin `HSA_OVERRIDE_GFX_VERSION` (desde 2026-11-08).** La imagen `ollama/ollama:rocm` (Ollama 0.40.13, `rocm_v7_2`) compila `libggml-hip.so` y rocBLAS con kernels nativos `gfx1150`/`gfx1151`. El override `11.0.0` que se usaba antes forzaba kernels gfx1100 (RDNA3 discreta). Sin override, Ollama detecta `library=ROCm compute=gfx1150 "AMD Radeon 890M Graphics" type=iGPU total="48.0 GiB"` (GTT, ver abajo) y la inferencia corre `100% GPU`. Si una imagen futura deja de traer gfx1150, volver a `HSA_OVERRIDE_GFX_VERSION=11.0.0`.
+
+### Memoria de la GPU (GTT)
+
+La 890M no reserva memoria en la BIOS: el UMA Frame Buffer está en **1 GB** (mínimo práctico, alcanza para el escritorio) y la GPU usa **48 GiB de GTT**, RAM del sistema que toma a medida que la necesita. Sin modelo cargado Ubuntu ve ~60 GiB; con 32 GiB de carve-out veía ~30.
+
+El kernel limita la GTT por defecto a la mitad de la RAM. El playbook la sube con parámetros de TTM en `/etc/default/grub.d/90-amdgpu-gtt.cfg` (variable `gtt_gib`, en páginas de 4 KiB: `48 * 1024 * 1024 / 4 = 12582912`):
+
+```
+ttm.pages_limit=12582912 ttm.page_pool_size=12582912
+```
+
+El playbook corre `update-grub` pero **no reinicia**: el cambio aplica en el próximo arranque. Si estaban cargados a mano en `/etc/default/grub`, los quita de ahí para no duplicarlos. Verificar después de reiniciar:
+
+```bash
+grep -o 'ttm[^ ]*' /proc/cmdline
+awk '{print $1/1024/1024/1024 " GiB"}' /sys/class/drm/card*/device/mem_info_vram_total /sys/class/drm/card*/device/mem_info_gtt_total   # 1 GiB / 48 GiB
+docker logs ollama 2>&1 | grep "inference compute"                                                                                # total="48.0 GiB"
+```
+
+`rocm-smi` muestra en «VRAM%» solo el 1 GB de la BIOS; para la GTT: `rocm-smi --showmeminfo vram gtt`.
+
+Rendimiento GTT vs carve-out (gemma-4-26B-A4B IQ4_XS, mismo prompt, 64k ctx, 2026-11-11): 19,78 y 19,67 tok/s con 48 GiB de GTT contra 21,37 con 32 GiB de carve-out (~7–8 % menos), a cambio de 16 GiB más para la GPU y la RAM libre para el sistema cuando no hay modelo cargado.
 
 ### Dimensionamiento para agentes (64k de contexto)
 
-VRAM: 32 GiB de carve-out UMA (BIOS) + ~15,2 GiB de GTT. KV cache q8_0 a 64k medido/calculado: flint ~0,9 GiB (14 de 49 capas con atención completa, el resto sliding window de 513), Qwen3-Coder-30B-A3B ~3,2 GiB. Con modelos MoE de ~22 GB el total queda en ~25 GiB de 32.
+Memoria de la GPU: 48 GiB de GTT (ver arriba). KV cache q8_0 a 64k medido/calculado: flint ~0,9 GiB (14 de 49 capas con atención completa, el resto sliding window de 513), Qwen3-Coder-30B-A3B ~3,2 GiB. Con modelos MoE de ~22 GB el total queda en ~25 GiB de 48.
 
-Benchmark 2026-11-08 (64k ctx, KV q8_0, todos `100% GPU`):
+Benchmark 2026-11-08 (con 32 GiB de carve-out UMA, antes del cambio a GTT; 64k ctx, KV q8_0, todos `100% GPU`):
 
 | Modelo | VRAM | Gen tok/s | Prompt ~12k tok/s |
 |---|---|---|---|
@@ -226,7 +248,7 @@ Los modelos densos son ~4–5x más lentos en esta iGPU (limitada por ancho de b
 
 Variables de entorno: mismas optimizaciones que alphaprime, sin `OLLAMA_ORIGINS` porque no hay WebUI/extensión detrás.
 
-> **`OLLAMA_IGPU_ENABLE=1` es obligatorio acá.** Ollama (≥0.34) descarta automáticamente las GPU integradas ("dropping integrated GPU; to enable, set OLLAMA_IGPU_ENABLE=1") y cae a CPU — se detectó en el primer deploy de prueba (`default_num_ctx=4096`, `total_vram=0B`, inference compute `id=cpu`). Con la variable seteada, Ollama reconoce la Radeon 890M como `type=iGPU total="32.0 GiB"` (VRAM unificada) y sube el contexto default a 32768 (sobrescrito a 65536 por `OLLAMA_CONTEXT_LENGTH`). No aplica en alphaprime porque ahí Ollama usa la GPU discreta (no es una iGPU).
+> **`OLLAMA_IGPU_ENABLE=1` es obligatorio acá.** Ollama (≥0.34) descarta automáticamente las GPU integradas ("dropping integrated GPU; to enable, set OLLAMA_IGPU_ENABLE=1") y cae a CPU — se detectó en el primer deploy de prueba (`default_num_ctx=4096`, `total_vram=0B`, inference compute `id=cpu`). Con la variable seteada, Ollama reconoce la Radeon 890M como `type=iGPU` (en ese momento `total="32.0 GiB"` del carve-out; hoy 48 GiB de GTT) y sube el contexto default a 32768 (sobrescrito a 65536 por `OLLAMA_CONTEXT_LENGTH`). No aplica en alphaprime porque ahí Ollama usa la GPU discreta (no es una iGPU).
 
 Estado de blackmamba (Ubuntu 26.04.1 LTS): Docker 29.1.3, `/mnt/storage` (NFS) montado. Onboarding Ansible completado el 2026-09-16 — usuario `ansible` (uid/gid 1001, igual que alphaprime) creado, sudoers `NOPASSWD: ALL`, clave pública de `ansible@alphaprime` autorizada, más `systemd-resolved.yml` y `local-ca.yml` aplicados (`--limit blackmamba.sismonda.local`).
 

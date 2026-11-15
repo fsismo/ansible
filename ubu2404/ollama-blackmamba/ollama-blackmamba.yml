@@ -10,8 +10,32 @@
     compose_dir: /opt/docker/ollama
     compose_path: "{{ compose_dir }}/compose.yml"
     service_file: /etc/systemd/system/ollama.service
+    # Memoria GTT de la iGPU (ver obsidian/Services/Ollama.md § Memoria de la GPU).
+    # TTM cuenta en páginas de 4 KiB: GiB * 1024 * 1024 / 4. Requiere UMA mínimo en la BIOS (1 GB).
+    gtt_gib: 48
+    ttm_pages: "{{ (gtt_gib | int) * 1024 * 1024 // 4 }}"
+    grub_gtt_cfg: /etc/default/grub.d/90-amdgpu-gtt.cfg
 
   tasks:
+  - name: Límite de GTT de la iGPU por parámetros del kernel (grub.d)
+    copy:
+      dest: "{{ grub_gtt_cfg }}"
+      owner: root
+      group: root
+      mode: 0644
+      content: |
+        # Gestionado por Ansible (ollama-blackmamba.yml): {{ gtt_gib }} GiB de GTT para la Radeon 890M.
+        GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT ttm.pages_limit={{ ttm_pages }} ttm.page_pool_size={{ ttm_pages }}"
+    notify: Actualizar GRUB
+
+  - name: Quitar parámetros ttm.* cargados a mano en /etc/default/grub
+    replace:
+      path: /etc/default/grub
+      regexp: '\s*ttm\.(pages_limit|page_pool_size)=\d+'
+      replace: ''
+      backup: yes
+    notify: Actualizar GRUB
+
   - name: Include Docker / Docker Compose Task
     ansible.builtin.include_tasks: "../modules/docker.yml"
 
@@ -59,6 +83,14 @@
       enabled: yes
 
   handlers:
+  - name: Actualizar GRUB
+    command: update-grub
+    notify: Avisar reinicio
+
+  - name: Avisar reinicio
+    debug:
+      msg: "GRUB actualizado: reiniciar blackmamba para aplicar el límite de GTT ({{ gtt_gib }} GiB). Verificar con /sys/class/drm/card*/device/mem_info_gtt_total."
+
   - name: Reiniciar ollama
     systemd:
       name: ollama.service

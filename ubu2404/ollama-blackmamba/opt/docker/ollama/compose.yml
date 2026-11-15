@@ -18,13 +18,13 @@ services:
       - OLLAMA_FLASH_ATTENTION=true
       - OLLAMA_KV_CACHE_TYPE=q8_0
       - OLLAMA_DEBUG=0
-      # Contexto 64k para agentes (OpenCode). Con KV q8_0 entra en los 32 GiB junto a modelos MoE de ~22 GB
+      # Contexto 64k para agentes (OpenCode). Con KV q8_0 entra holgado en los 48 GiB de GTT junto a modelos MoE de ~22 GB
       - OLLAMA_CONTEXT_LENGTH=65536
       # Agentes: no descargar el modelo entre turnos (recargar 22 GB + reprocesar el prompt es caro)
       - OLLAMA_KEEP_ALIVE=30m
       # 2 slots para subagentes de OpenCode (KV x2: flint ~1,9 GiB, Qwen3-Coder ~6,4 GiB a 64k)
       - OLLAMA_NUM_PARALLEL=2
-      # Un solo modelo en VRAM: dos modelos de ~22 GB no entran en 32 GiB
+      # Un solo modelo en memoria: dos modelos de ~22 GB con su contexto no entran cómodos ni en 48 GiB
       - OLLAMA_MAX_LOADED_MODELS=1
     volumes:
       - ./ollama:/root/.ollama
