@@ -8,7 +8,9 @@ services:
       - "/dev/kfd:/dev/kfd"
       - "/dev/dri:/dev/dri"
     environment:
-      - HSA_OVERRIDE_GFX_VERSION=12.0.0
+      # Sin HSA_OVERRIDE_GFX_VERSION (2026-11-24): la imagen trae kernels
+      # nativos gfx1200 (RX 9060 XT) y gfx1201 (la placa de 32 GB que la
+      # reemplaza). Ver obsidian/Services/Ollama.md § GPU.
       - ROCR_VISIBLE_DEVICES=0
       - OLLAMA_FLASH_ATTENTION=true
       - OLLAMA_KV_CACHE_TYPE=q8_0

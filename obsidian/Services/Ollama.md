@@ -44,9 +44,12 @@ devices:
   - /dev/kfd    # KFD (Kernel Fusion Driver)
   - /dev/dri    # Direct Rendering Infrastructure
 environment:
-  HSA_OVERRIDE_GFX_VERSION: 12.0.0   # fuerza arquitectura GPU para ROCm
-  ROCR_VISIBLE_DEVICES: 0
+  ROCR_VISIBLE_DEVICES: 0   # la placa discreta; la 1 es la iGPU Strix (gfx1150), la usa comfyui
 ```
+
+> **Sin `HSA_OVERRIDE_GFX_VERSION` (desde 2026-11-24).** Estaba en `12.0.0`, la arquitectura real de la RX 9060 XT (gfx1200): no cambiaba nada. La imagen `ollama/ollama:rocm` (`rocm_v7_2`) trae rocBLAS con kernels nativos `gfx1200` y `gfx1201`, y Ollama detecta la placa sola (`gfx1200 ... VRAM: 16304 MiB`). Se sacó antes del cambio por una placa AMD de 32 GB (gfx1201): con el override hubiera forzado kernels de gfx1200. Si al cambiar la placa se invierte el orden de las GPU (`rocm-smi --showproductname`), ajustar `ROCR_VISIBLE_DEVICES` acá y en `comfyui`. El aviso `rocblaslt error: Cannot read "TensileLibrary_lazy_gfx1200.dat"` no viene del override: la imagen no trae hipBLASLt para gfx1200.
+>
+> **Errores de memoria con la placa de 16 GB (desde 2026-11-23).** Con la imagen del 2026-11-21 (modelo de borrador para decodificación especulativa, proyector de visión y 32k de contexto), `gemma4:26b` carga en los 15,9 GiB libres pero se queda sin memoria al responder (`ROCm error: out of memory`): Ollama descarga y recarga el modelo, 7-10 s cada vez, hasta 250 veces por hora el 2026-11-24. El paso `run` de ianews pasó de 4-7 a 15-19 min. Se resuelve con la placa de 32 GB.
 
 ## Optimizaciones de inferencia
 
