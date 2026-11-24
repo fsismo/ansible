@@ -50,6 +50,8 @@ environment:
 > **Sin `HSA_OVERRIDE_GFX_VERSION` (desde 2026-11-24).** Estaba en `12.0.0`, la arquitectura real de la RX 9060 XT (gfx1200): no cambiaba nada. La imagen `ollama/ollama:rocm` (`rocm_v7_2`) trae rocBLAS con kernels nativos `gfx1200` y `gfx1201`, y Ollama detecta la placa sola (`gfx1200 ... VRAM: 16304 MiB`). Se sacó antes del cambio por una placa AMD de 32 GB (gfx1201): con el override hubiera forzado kernels de gfx1200. Si al cambiar la placa se invierte el orden de las GPU (`rocm-smi --showproductname`), ajustar `ROCR_VISIBLE_DEVICES` acá y en `comfyui`. El aviso `rocblaslt error: Cannot read "TensileLibrary_lazy_gfx1200.dat"` no viene del override: la imagen no trae hipBLASLt para gfx1200.
 >
 > **Errores de memoria con la placa de 16 GB (desde 2026-11-23).** Con la imagen del 2026-11-21 (modelo de borrador para decodificación especulativa, proyector de visión y 32k de contexto), `gemma4:26b` carga en los 15,9 GiB libres pero se queda sin memoria al responder (`ROCm error: out of memory`): Ollama descarga y recarga el modelo, 7-10 s cada vez, hasta 250 veces por hora el 2026-11-24. El paso `run` de ianews pasó de 4-7 a 15-19 min. Se resuelve con la placa de 32 GB.
+>
+> **Vuelta a 0.40.16 (2026-11-24, a mano).** Se re-etiquetó `:_rollback` (0.40.16, del 2026-11-09) como `ollama/ollama:rocm`; la 0.40.17 quedó como `ollama/ollama:0.40.17`. Los errores de memoria siguen (24 de 90 pedidos en los primeros 4 min): no los trajo la actualización. Ollama ya atiende un pedido por vez (`OLLAMA_NUM_PARALLEL` 1 por defecto, `-np 1`) y hay un solo modelo cargado. La actualización del domingo vuelve a bajar la última versión.
 
 ## Optimizaciones de inferencia
 
